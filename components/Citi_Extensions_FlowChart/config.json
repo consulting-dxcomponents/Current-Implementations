@@ -1,0 +1,108 @@
+{
+  "name": "Citi_Extensions_FlowChart",
+  "label": "FlowChart",
+  "description": "Left-to-right mind map / org chart with configurable data page and dynamic filters",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_FlowChart",
+  "type": "Widget",
+  "subtype": "PAGE",
+  "icon": "OneColumnPage.svg",
+  "properties": [
+    {
+      "name": "title",
+      "label": "Chart title",
+      "format": "TEXT",
+      "defaultValue": "Mind Map"
+    },
+    {
+      "name": "dataPageName",
+      "label": "Data page name",
+      "format": "TEXT",
+      "defaultValue": ""
+    },
+    {
+      "name": "idField",
+      "label": "ID field name (in data page response)",
+      "format": "TEXT",
+      "defaultValue": "id"
+    },
+    {
+      "name": "labelField",
+      "label": "Label field name",
+      "format": "TEXT",
+      "defaultValue": "label"
+    },
+    {
+      "name": "parentField",
+      "label": "Parent ID field name",
+      "format": "TEXT",
+      "defaultValue": "parentId"
+    },
+    {
+      "name": "colorField",
+      "label": "Color field name (optional)",
+      "format": "TEXT",
+      "defaultValue": ""
+    },
+    {
+      "name": "treeData",
+      "label": "Static tree JSON (used when no data page is set)",
+      "format": "TEXT",
+      "defaultValue": ""
+    },
+    {
+      "label": "Filter 1 (optional)",
+      "format": "GROUP",
+      "properties": [
+        { "name": "filter1Label",   "label": "Display label",                       "format": "TEXT",   "defaultValue": "Filter 1" },
+        { "name": "filter1Field",   "label": "Data page parameter name",             "format": "TEXT",   "defaultValue": "" },
+        { "name": "filter1Type",    "label": "Input type  (text | date | select)",   "format": "TEXT",   "defaultValue": "text" },
+        { "name": "filter1Options", "label": "Options (comma-separated, select only)","format": "TEXT",  "defaultValue": "" }
+      ]
+    },
+    {
+      "label": "Filter 2 (optional)",
+      "format": "GROUP",
+      "properties": [
+        { "name": "filter2Label",   "label": "Display label",                       "format": "TEXT",   "defaultValue": "Filter 2" },
+        { "name": "filter2Field",   "label": "Data page parameter name",             "format": "TEXT",   "defaultValue": "" },
+        { "name": "filter2Type",    "label": "Input type  (text | date | select)",   "format": "TEXT",   "defaultValue": "text" },
+        { "name": "filter2Options", "label": "Options (comma-separated, select only)","format": "TEXT",  "defaultValue": "" }
+      ]
+    },
+    {
+      "label": "Filter 3 (optional)",
+      "format": "GROUP",
+      "properties": [
+        { "name": "filter3Label",   "label": "Display label",                       "format": "TEXT",   "defaultValue": "Filter 3" },
+        { "name": "filter3Field",   "label": "Data page parameter name",             "format": "TEXT",   "defaultValue": "" },
+        { "name": "filter3Type",    "label": "Input type  (text | date | select)",   "format": "TEXT",   "defaultValue": "text" },
+        { "name": "filter3Options", "label": "Options (comma-separated, select only)","format": "TEXT",  "defaultValue": "" }
+      ]
+    },
+    {
+      "label": "Search box (optional)",
+      "format": "GROUP",
+      "properties": [
+        { "name": "searchLabel",       "label": "Search box label",              "format": "TEXT", "defaultValue": "Search" },
+        { "name": "searchField",       "label": "Data page parameter name",      "format": "TEXT", "defaultValue": "" },
+        { "name": "searchPlaceholder", "label": "Placeholder text",              "format": "TEXT", "defaultValue": "Type to search…" }
+      ]
+    },
+    {
+      "label": "Conditions",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "visibility",
+          "label": "Visibility",
+          "format": "VISIBILITY"
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {}
+}

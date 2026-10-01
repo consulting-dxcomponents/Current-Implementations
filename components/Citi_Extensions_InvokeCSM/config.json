@@ -1,0 +1,76 @@
+{
+  "name": "Citi_Extensions_InvokeCSM",
+  "label": "InvokeCSM",
+  "description": "Fetches session URLs from a DataPage, silently logs off the RSM session via a hidden iframe, then opens the CSM URL in a new tab.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_InvokeCSM",
+  "type": "Field",
+  "subtype": "Text",
+  "properties": [
+    {
+      "name": "buttonLabel",
+      "label": "Button label",
+      "format": "TEXT"
+    },
+    {
+      "label": "DataPage",
+      "format": "GROUP",
+      "collapsible": false,
+      "properties": [
+        {
+          "name": "dataPageName",
+          "label": "DataPage name",
+          "format": "TEXT"
+        },
+        {
+          "name": "dataPageParams",
+          "label": "DataPage parameters (comma-separated field names)",
+          "format": "TEXT"
+        },
+        {
+          "name": "caseIDLaunch",
+          "label": "Initial load — link keys (\"<labelKey>,<urlKey>,<caseIDKey>,<deptKey>,<userIDKey>\")",
+          "format": "TEXT"
+        },
+        {
+          "name": "logOffURL",
+          "label": "Button mode — logoff URL key from DataPage (\"<logoffURLKey>\")",
+          "format": "TEXT"
+        },
+        {
+          "name": "caseCreateLaunch",
+          "label": "Button mode — case creation URL key from DataPage (\"<caseCreateURLKey>\")",
+          "format": "TEXT"
+        }
+      ]
+    },
+    {
+        "name": "retryDelay",
+        "label": "Retry delay (ms) — re-poll DataPage after this delay if initial load did not resolve",
+        "format": "NUMBER"
+    },
+    {
+      "name": "visibility",
+      "label": "Visible",
+      "format": "VISIBILITY"
+    },
+    {
+      "label": "Advanced",
+      "format": "GROUP",
+      "collapsible": true,
+      "properties": [
+        {
+          "name": "testId",
+          "label": "Test ID",
+          "format": "TEXT",
+          "ignorePattern": "[^-_\\p{N}\\p{L}]",
+          "includeAnnotations": false
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {}
+}

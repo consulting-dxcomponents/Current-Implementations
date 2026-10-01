@@ -1,0 +1,34 @@
+import { withConfiguration, Flex, Button } from '@pega/cosmos-react-core';
+import './create-nonce';
+
+type ActionableButtonProps = {
+  label: string;
+  title?: string;
+  value: string;
+  localAction: string;
+  getPConnect: any;
+};
+
+export const PegaExtensionsActionableButton = (props: ActionableButtonProps) => {
+  const { getPConnect, label, title, value, localAction } = props;
+  if (value && localAction) {
+    const LaunchLocalAction = () => {
+      const actionsAPI = getPConnect().getActionsApi();
+      const openLocalAction = actionsAPI.openLocalAction.bind(actionsAPI);
+      openLocalAction(localAction, {
+        caseID: value,
+        containerName: 'modal',
+        type: 'express',
+        ...(title ? { actionTitle: title, name: title } : {})
+      });
+    };
+    return (
+      <Flex container={{ direction: 'row' }}>
+        <Button className='citi-actionable-button' onClick={LaunchLocalAction}>{label}</Button>
+      </Flex>
+    );
+  }
+  return null;
+};
+
+export default withConfiguration(PegaExtensionsActionableButton);

@@ -1,0 +1,69 @@
+{
+  "name": "Citi_Extensions_Utility",
+  "label": "Utility",
+  "description": "Invokes a configured Utility or Activity through a Data Page.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_Utility",
+  "type": "Field",
+  "subtype": "Text",
+  "properties": [
+    {
+      "name": "buttonLabel",
+      "label": "Button label",
+      "format": "TEXT",
+      "value": "Run"
+    },
+    {
+      "label": "Data Page invocation",
+      "format": "GROUP",
+      "collapsible": false,
+      "properties": [
+        {
+          "name": "dataPageName",
+          "label": "Data Page name",
+          "format": "TEXT"
+        },
+        {
+          "name": "invocationName",
+          "label": "Utility or Activity name",
+          "format": "TEXT"
+        },
+        {
+          "name": "invocationNameParameter",
+          "label": "Data Page parameter for Utility or Activity name",
+          "format": "TEXT",
+          "value": "invocationName"
+        },
+        {
+          "name": "dataPageParams",
+          "label": "Additional Data Page parameters (comma-separated current-page fields)",
+          "format": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "visibility",
+      "label": "Visible",
+      "format": "VISIBILITY"
+    },
+    {
+      "label": "Advanced",
+      "format": "GROUP",
+      "collapsible": true,
+      "properties": [
+        {
+          "name": "testId",
+          "label": "Test ID",
+          "format": "TEXT",
+          "ignorePattern": "[^-_\\p{N}\\p{L}]",
+          "includeAnnotations": false
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {
+  }
+}

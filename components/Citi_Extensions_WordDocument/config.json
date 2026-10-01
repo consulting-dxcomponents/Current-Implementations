@@ -1,0 +1,75 @@
+{
+  "name": "Citi_Extensions_WordDocument",
+  "label": "Word Document",
+  "description": "A Microsoft Word-like document editor with formatting, tables, comments, track changes, find & replace, and export.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_WordDocument",
+  "type": "Field",
+  "subtype": "Text",
+  "properties": [
+    {
+      "name": "value",
+      "label": "Document Content (field)",
+      "format": "PROPERTY",
+      "required": true
+    },
+    {
+      "name": "documentTitle",
+      "label": "Document Title",
+      "format": "TEXT"
+    },
+    {
+      "name": "authorName",
+      "label": "Author Name",
+      "format": "TEXT"
+    },
+    {
+      "name": "initialReadOnly",
+      "label": "Open in Read-Only mode",
+      "format": "BOOLEAN"
+    },
+    {
+      "name": "commentsPropName",
+      "label": "Comments (Page List property)",
+      "format": "PROPERTY",
+      "required": false,
+      "helpText": "Bind to a Page List property backed by Data-WordComment (e.g. .DocumentComments). Each comment and its replies are stored as individual embedded pages."
+    },
+    {
+      "name": "versionsPropName",
+      "label": "Versions (Page List property)",
+      "format": "PROPERTY",
+      "required": false,
+      "helpText": "Bind to a Page List property backed by Data-WordVersion (e.g. .DocumentVersions). Each edit burst saves a full HTML snapshot, letting users restore any previous version."
+    },
+    {
+      "name": "visibility",
+      "label": "Visible",
+      "format": "VISIBILITY"
+    },
+    {
+      "label": "Advanced",
+      "format": "GROUP",
+      "collapsible": true,
+      "properties": [
+        {
+          "name": "testId",
+          "label": "Test ID",
+          "format": "TEXT",
+          "ignorePattern": "[^-_\\p{N}\\p{L}]",
+          "includeAnnotations": false
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {
+    "documentTitle": "Untitled Document",
+    "authorName": "",
+    "initialReadOnly": false,
+    "commentsPropName": "",
+    "versionsPropName": ""
+  }
+}

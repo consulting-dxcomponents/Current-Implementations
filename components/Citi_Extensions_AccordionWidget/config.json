@@ -1,0 +1,60 @@
+{
+  "name": "Citi_Extensions_AccordionWidget",
+  "label": "Accordion Widget",
+  "description": "Accordion panels configured individually. Each panel renders an independently configurable Pega view. Supports expand/collapse all.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_AccordionWidget",
+  "type": "Template",
+  "subtype": "FORM",
+  "icon": "DefaultForm.svg",
+  "properties": [
+    {
+      "name": "title",
+      "label": "Widget title",
+      "format": "TEXT",
+      "defaultValue": "Options"
+    },
+    {
+      "name": "subtitle",
+      "label": "Subtitle / instruction text",
+      "format": "TEXT",
+      "defaultValue": ""
+    },
+    {
+      "name": "panelLabels",
+      "label": "Panel labels (comma-separated — one per view added below, in order)",
+      "format": "TEXT",
+      "defaultValue": ""
+    },
+    {
+      "name": "panelTooltips",
+      "label": "Panel hint texts (comma-separated, matching order above — leave blank if not needed)",
+      "format": "TEXT",
+      "defaultValue": ""
+    },
+    {
+      "format": "INSTRUCTIONS"
+    },
+    {
+      "name": "Fields",
+      "label": "Panel views — add one view/section per panel, in the same order as labels above",
+      "format": "CONTENTPICKER",
+      "allowCreatingGroup": true
+    },
+    {
+      "label": "Conditions",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "visibility",
+          "label": "Visibility",
+          "format": "VISIBILITY"
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {}
+}

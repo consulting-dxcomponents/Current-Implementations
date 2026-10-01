@@ -1,0 +1,28 @@
+{
+  "name": "Citi_Extensions_AutoSaveForm",
+  "label": "AutoSaveForm",
+  "description": "AutoSaveForm",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_AutoSaveForm",
+  "type": "Field",
+  "subtype": "Text",
+  "properties": [
+    {
+      "name": "autoSaveEnabled",
+      "label": "Enable AutoSave",
+      "format": "BOOLEAN",
+      "value": false
+    },
+    {
+      "name": "autoSaveInterval",
+      "label": "AutoSave Interval (ms)",
+      "format": "TEXT",
+      "value": "5000"
+    }
+  ],
+  "defaultConfig": {
+  }
+}

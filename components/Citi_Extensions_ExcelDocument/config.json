@@ -1,0 +1,59 @@
+{
+  "name": "Citi_Extensions_ExcelDocument",
+  "label": "Excel Document",
+  "description": "A Microsoft Excel-like spreadsheet with multi-sheet workbook, formulas, formatting, sort, filter, charts, and CSV export.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_ExcelDocument",
+  "type": "Field",
+  "subtype": "Text",
+  "properties": [
+    {
+      "name": "workbookTitle",
+      "label": "Workbook Title",
+      "format": "TEXT"
+    },
+    {
+      "name": "authorName",
+      "label": "Author Name",
+      "format": "TEXT"
+    },
+    {
+      "name": "initialRows",
+      "label": "Initial Row Count",
+      "format": "INTEGER"
+    },
+    {
+      "name": "initialCols",
+      "label": "Initial Column Count",
+      "format": "INTEGER"
+    },
+    {
+      "name": "visibility",
+      "label": "Visible",
+      "format": "VISIBILITY"
+    },
+    {
+      "label": "Advanced",
+      "format": "GROUP",
+      "collapsible": true,
+      "properties": [
+        {
+          "name": "testId",
+          "label": "Test ID",
+          "format": "TEXT",
+          "ignorePattern": "[^-_\\p{N}\\p{L}]",
+          "includeAnnotations": false
+        }
+      ]
+    }
+  ],
+  "defaultConfig": {
+    "workbookTitle": "Untitled Workbook",
+    "authorName": "",
+    "initialRows": 20,
+    "initialCols": 10
+  }
+}

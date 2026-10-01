@@ -1,0 +1,21 @@
+{
+  "name": "Citi_Extensions_CancelAssignment",
+  "label": "CancelAssignment",
+  "description": "CancelAssignment",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_CancelAssignment",
+  "type": "Field",
+  "subtype": "Text",
+  "properties": [
+    {
+      "name": "label",
+      "label": "Label value",
+      "format": "TEXT"
+    }
+  ],
+  "defaultConfig": {
+  }
+}

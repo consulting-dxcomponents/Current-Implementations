@@ -1,0 +1,74 @@
+{
+    "name": "Citi_Extensions_MaskedInputReadOnly",
+    "label": "MaskedInputReadOnly",
+    "description": "MaskedInputReadOnly",
+    "organization": "Citi",
+    "version": "1.0.0",
+    "library": "Extensions",
+    "componentKey": "Citi_Extensions_MaskedInputReadOnly",
+    "type": "Field",
+    "subtype": "Text",
+    "subtypeLabel": "Text",
+    "properties": [
+        {
+            "name": "label",
+            "label": "Label value",
+            "format": "TEXT"
+        },
+        {
+            "name": "placeholder",
+            "label": "Placeholder",
+            "format": "TEXT"
+        },
+        {
+            "name": "visibility",
+            "label": "Visible",
+            "format": "VISIBILITY"
+        },
+        {
+            "name": "disabled",
+            "label": "Disabled",
+            "format": "DISABLED"
+        },
+        {
+            "name": "readOnly",
+            "label": "Read Only",
+            "format": "READONLY"
+        },
+        {
+            "name": "required",
+            "label": "Required",
+            "format": "REQUIRED"
+        },
+        {
+            "name": "defaultMasked",
+            "label": "Mask By Default",
+            "format": "BOOLEAN"
+        },
+        {
+            "name": "visibleChars",
+            "label": "Visible Characters",
+            "format": "NUMBER"
+        },
+        {
+            "label": "Advanced",
+            "format": "GROUP",
+            "collapsible": true,
+            "properties": [
+                {
+                    "name": "testId",
+                    "label": "Test ID",
+                    "format": "TEXT",
+                    "ignorePattern": "[^-_\\p{N}\\p{L}]",
+                    "includeAnnotations": false
+                }
+            ]
+        }
+    ],
+    "defaultConfig": {
+        "detailFVLItem": true,
+        "isFormWidth": false,
+        "isContainerWidth": false
+    },
+    "allowedApplications": []
+}
