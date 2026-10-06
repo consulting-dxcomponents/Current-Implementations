@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="70px" viewBox="0 0 100 70" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>1 col iframe</title>
+    <g id="Page-Config" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Page-layouts" transform="translate(-692.000000, -84.000000)">
+            <g id="1-col-iframe" transform="translate(692.000000, 84.000000)">
+                <rect id="bg" stroke="#A5A8BC" stroke-width="0.5" fill="#E7E9EB" x="0.25" y="0.25" width="99.5" height="69.5"></rect>
+                <g id="white" transform="translate(3.000000, 3.000000)" fill="#FFFFFF">
+                    <rect id="Rectangle" x="0" y="0" width="94" height="66.5"></rect>
+                </g>
+                <g id="gray" transform="translate(6.000000, 6.000000)" fill="#8084A7">
+                    <rect id="Rectangle" x="0" y="0" width="88" height="63.8"></rect>
+                </g>
+
+                <g id="iframe" transform="translate(18.000000, 14.000000)">
+                    <rect id="iframe-bg" x="0" y="0" width="64" height="42" rx="1.5" fill="#FFFFFF" stroke="#D1D4E3" stroke-width="1"></rect>
+                    <rect id="iframe-header" x="0" y="0" width="64" height="8" fill="#F0F2F8"></rect>
+                    <circle id="dot-1" cx="4" cy="4" r="1" fill="#C4C8DA"></circle>
+                    <circle id="dot-2" cx="8" cy="4" r="1" fill="#C4C8DA"></circle>
+                    <circle id="dot-3" cx="12" cy="4" r="1" fill="#C4C8DA"></circle>
+                    <rect id="iframe-content" x="4" y="12" width="56" height="24" rx="1" fill="#EEF1FF" stroke="#DDE2F5" stroke-width="0.8"></rect>
+                    <text x="32" y="27" text-anchor="middle" fill="#59608A" font-family="OpenSans-Semibold, Open Sans" font-size="8" font-weight="600">iframe</text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

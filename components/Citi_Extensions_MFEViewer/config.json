@@ -1,0 +1,718 @@
+{
+  "name": "Citi_Extensions_MFEViewer",
+  "label": "MFE Viewer",
+  "description": "MFE Viewer",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_MFEViewer",
+  "type": "Template",
+  "subtype": "DETAILS",
+  "icon": "Iframe.svg",
+  "properties": [
+    {
+      "key": "mfeURL",
+      "name": "mfeURL",
+      "label": "MFE URL",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "key": "mfeTimeout",
+      "name": "mfeTimeout",
+      "label": "MFE Timeout (ms)",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "key": "type",
+      "name": "type",
+      "label": "Type",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "key": "showSearch",
+      "name": "showSearch",
+      "label": "Show Search (Toggle)",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "key": "allowExpand",
+      "name": "allowExpand",
+      "label": "Allow Expand (Toggle)",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "label": "Documents configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "referenceList",
+          "label": "Data page to source document list",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Document ID field",
+          "name": "documentIdField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "File name field",
+          "name": "fileNameField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "File URL field",
+          "name": "fileURLField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Category field",
+          "name": "categoryField",
+          "required": false
+        },
+        {
+          "format": "TEXT",
+          "label": "Current Page Num field",
+          "name": "currentPageNumField",
+          "required": false
+        },
+        {
+          "label": "Category configuration",
+          "format": "GROUP",
+          "properties": [
+            {
+              "format": "TEXT",
+              "label": "Page Category ID field",
+              "name": "pageCategoryIDField",
+              "required": true
+            },
+            {
+              "format": "TEXT",
+              "label": "Category field",
+              "name": "pageCategoryField",
+              "required": true
+            },
+            {
+              "format": "TEXT",
+              "label": "Pages field",
+              "name": "pageCategoryPagesField",
+              "required": true
+            }
+          ]
+        },
+        {
+          "format": "TEXT",
+          "label": "Active document field",
+          "name": "activeDocField",
+          "required": false
+        }
+      ]
+    },
+    {
+      "label": "Transaction data list configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "transactionDataReferenceList",
+          "label": "Data page to source transaction data list",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Master JSON Data Field",
+          "name": "transactionDataJsonField",
+          "required": true
+        },
+        {
+          "key": "isCustomTab",
+          "name": "isCustomTab",
+          "label": "Is Custom Tab (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "loadFromTemplate",
+          "name": "loadFromTemplate",
+          "label": "Load From Template (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "currentQueue",
+          "name": "currentQueue",
+          "label": "Current Queue",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "transactionDataSaveReferenceList",
+          "label": "Data page to save/submit transaction data list",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "name": "transactionFieldsParameter",
+          "label": "Parameter to pass Transaction extraction data",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "uniqueIdParameter",
+          "label": "Parameter to pass unique Id",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "saveResultField",
+          "label": "Save Result Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "saveMessageField",
+          "label": "Save Message Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "key": "transactionsDataFieldMap",
+          "name": "transactionsDataFieldMap",
+          "label": "Transactions Data Field Map",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "finishAssignmentOnSubmitTransactionData",
+          "name": "finishAssignmentOnSubmitTransactionData",
+          "label": "Finish Assignment On Submit Transaction Data (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "label": "Transaction On Demand OCR configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "Click2PickTransactions",
+          "name": "Click2PickTransactions",
+          "label": "Allow Click 2 Pick Transactions (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "label": "Viewer state configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "loadStateChange",
+          "name": "loadStateChange",
+          "label": "Load State Change Handler (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "fireEventToDynamicView",
+          "name": "fireEventToDynamicView",
+          "label": "Fire Event to Dynamic View (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "updateDocumentFields",
+          "name": "updateDocumentFields",
+          "label": "Update Document Properties (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "changedPageField",
+          "label": "Page Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedPageCountField",
+          "label": "Page Count Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedFileNameField",
+          "label": "File Name Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedDocIDField",
+          "label": "Document ID Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "transientDocumentIdField",
+          "label": "Transient Document ID Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedDocLabelField",
+          "label": "Document Label Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedPageCategoryIDField",
+          "label": "Page Category ID Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedModeField",
+          "label": "Mode Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "changedTotalDocsField",
+          "label": "Total Documents Field",
+          "format": "TEXT",
+          "required": true
+        }
+      ]
+    },
+    {
+      "label": "Field Highlighting configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "loadCaptures",
+          "name": "loadCaptures",
+          "label": "Load Captures (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "loadHighlights",
+          "name": "loadHighlights",
+          "label": "Load Individual Field Highlights (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "highlightSource",
+          "name": "highlightSource",
+          "label": "Source for Highlight event",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "highlightColor",
+          "name": "highlightColor",
+          "label": "Color for Highlight event",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "capturesReferenceList",
+          "label": "Data page to source highlighted fields",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "ID Field",
+          "name": "idField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Page Number Field",
+          "name": "pageNumberField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "BBOX Field",
+          "name": "box2dField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Value field",
+          "name": "valueField",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Color field",
+          "name": "colorField",
+          "required": false
+        }
+      ]
+    },
+    {
+      "label": "Split and Merge configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "loadSplitAndMerge",
+          "name": "loadSplitAndMerge",
+          "label": "Load Split and Merge (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "waitForSplit",
+          "name": "waitForSplit",
+          "label": "Wait for Split (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "manualSplit",
+          "name": "manualSplit",
+          "label": "Manual Split (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "allowPageShuffling",
+          "name": "allowPageShuffling",
+          "label": "Allow Page Shuffling (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "allowPageMovement",
+          "name": "allowPageMovement",
+          "label": "Allow Page Movement (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "isSAMOpenField",
+          "label": "Is SAM Open Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "key": "samType",
+          "name": "samType",
+          "label": "Split and Merge Type",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "correlationId",
+          "name": "correlationId",
+          "label": "Correlation ID",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "appId",
+          "name": "appId",
+          "label": "App ID",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "samCategoryReferenceList",
+          "label": "Data page to source category list for dropdown",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "name": "samCategoryListField",
+          "label": "Category list field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "key": "inProgressStatusRegex",
+          "name": "inProgressStatusRegex",
+          "label": "Inprogress status regex",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "completedStatusRegex",
+          "label": "Completed status regex",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "inProgressBannerText",
+          "name": "inProgressBannerText",
+          "label": "In progress banner text",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "inProgressStatus",
+          "name": "inProgressStatus",
+          "label": "In progress status flag",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "physicalSplitModalConfirmationMessage",
+          "name": "physicalSplitModalConfirmationMessage",
+          "label": "Physical Split Modal Confirmation Message",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "inProgressWorkStatus",
+          "name": "inProgressWorkStatus",
+          "label": "In progress work status",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "completedWorkStatus",
+          "name": "completedWorkStatus",
+          "label": "Completed work status",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "label": "OCR on demand configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "format": "DATAPAGE",
+          "label": "Data page for OCR on demand extraction",
+          "name": "ocrOnDemandReferenceList",
+          "required": true
+        },
+        {
+          "name": "ocrOnDemandBase64SnippetParameter",
+          "label": "OCR on demand base64 snippet parameter",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "ocrOnDemandRefIdParameter",
+          "label": "OCR on demand reference ID parameter",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "ocrOnDemandDocumentIdParameter",
+          "label": "OCR on demand document ID parameter",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "ocrOnDemandExtractedValueField",
+          "label": "OCR on demand extracted value field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "ocrOnDemandExtractionTimeoutInMS",
+          "label": "OCR on demand extraction timeout (ms)",
+          "format": "TEXT",
+          "required": true
+        }
+      ]
+    },
+    {
+      "label": "NER configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "loadNER",
+          "name": "loadNER",
+          "label": "Load NER (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "openNER",
+          "name": "openNER",
+          "label": "Open NER (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "readOnlyNER",
+          "name": "readOnlyNER",
+          "label": "Read Only NER (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "allowAcknowledgementNER",
+          "name": "allowAcknowledgementNER",
+          "label": "Allow Acknowledgement NER (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "allowOcrOnDemandNER",
+          "name": "allowOcrOnDemandNER",
+          "label": "Allow OCR On Demand NER (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "columnNamesNER",
+          "name": "columnNamesNER",
+          "label": "Column Names NER",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "finishAssignmentOnSubmitNER",
+          "name": "finishAssignmentOnSubmitNER",
+          "label": "Finish Assignment on Submit NER (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "name": "isNEROpenField",
+          "label": "Is NER Open Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "isNERSubmittedField",
+          "label": "Is NER Submitted Field",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "nerReferenceList",
+          "label": "Data page to source NER extraction",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "NER JSON Field",
+          "name": "nerJsonField",
+          "required": true
+        },
+        {
+          "label": "Noun master list configuration",
+          "format": "GROUP",
+          "properties": [
+            {
+              "name": "nounMasterReferenceList",
+              "label": "Data page to source noun master list",
+              "format": "DATAPAGE",
+              "required": true
+            },
+            {
+              "format": "TEXT",
+              "label": "Noun / Field Name Field",
+              "name": "nounField",
+              "required": true
+            },
+            {
+              "format": "TEXT",
+              "label": "Classification Field",
+              "name": "nounClassificationField",
+              "required": true
+            }
+          ]
+        },
+        {
+          "label": "Save configuration",
+          "format": "GROUP",
+          "properties": [
+            {
+              "format": "DATAPAGE",
+              "label": "Data page to save NER extraction",
+              "name": "nerSaveReferenceList",
+              "required": true
+            },
+            {
+              "name": "nerDataParameter",
+              "label": "Parameter to pass NER extraction data",
+              "format": "TEXT",
+              "required": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "Logging configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "logDataPage",
+          "label": "Data page",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "logParameter",
+          "label": "Parameter to log",
+          "format": "TEXT",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
