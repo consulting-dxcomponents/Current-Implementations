@@ -164,6 +164,22 @@
           "match": "propertyRef"
         },
         {
+          "key": "maintenanceApproach",
+          "name": "maintenanceApproach",
+          "label": "Maintenance Approach",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "maintenanceApproachNERFlag",
+          "name": "maintenanceApproachNERFlag",
+          "label": "Maintenance Approach NER Flag",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
           "name": "transactionDataSaveReferenceList",
           "label": "Data page to save/submit transaction data list",
           "format": "DATAPAGE",

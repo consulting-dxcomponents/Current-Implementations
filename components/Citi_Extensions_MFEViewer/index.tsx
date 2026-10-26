@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   useUID,
   useModalManager,
@@ -9,10 +9,10 @@ import {
   Text,
   Progress,
   ErrorState,
-  withConfiguration,
-} from "@pega/cosmos-react-core";
-import StyledCitiExtensionsMfeViewerWrapper from "./styles";
-import { MFE_CONSTANTS } from "./constants";
+  withConfiguration
+} from '@pega/cosmos-react-core';
+import StyledCitiExtensionsMfeViewerWrapper from './styles';
+import { MFE_CONSTANTS } from './constants';
 import {
   getFileArrayBuffer,
   fetchWithBackoff,
@@ -20,8 +20,8 @@ import {
   getPropertyParameterArray,
   arrayBufferToBase64,
   LATEST_ASSIGNMENT_ETAG_KEY,
-  registerAssignmentEtagInterceptor,
-} from "./utils";
+  registerAssignmentEtagInterceptor
+} from './utils';
 import type {
   CitiExtensionsMfeViewerProps,
   ViewerMessage,
@@ -41,9 +41,9 @@ import type {
   HighlightMessage,
   LoadExtractionDataMessage,
   ViewerTransactionDataPayload,
-  ValidationMsgMessage,
-} from "./mfeTypes";
-import "./create-nonce";
+  ValidationMsgMessage
+} from './mfeTypes';
+import './create-nonce';
 
 const {
   READY,
@@ -84,19 +84,19 @@ const {
   SUBMIT,
   CANCEL,
   VALIDATION_MSG,
-  SPLIT_APPROVED_ACK,
+  SPLIT_APPROVED_ACK
 } = MFE_CONSTANTS;
 
 const DIFF_ORIGIN_EVENT_TYPES: Array<String> = [ALL_DOC_REQUEST, DOC_REQUEST];
 const NO_CAPTURES_WARNING_MESSAGE =
-  "No captures found for requested document. Viewer may not display highlights correctly.";
+  'No captures found for requested document. Viewer may not display highlights correctly.';
 
 function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const {
     getPConnect,
     inheritedProps,
     mfeURL,
-    type = "LOAD_SINGLEDOC,SingleDoc",
+    type = 'LOAD_SINGLEDOC,SingleDoc',
     mfeTimeout,
     showSearch = true,
     allowExpand = true,
@@ -180,37 +180,33 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     isCustomTab,
     loadFromTemplate,
     currentQueue,
+    maintenanceApproach,
+    maintenanceApproachNERFlag,
     transactionDataSaveReferenceList,
     transactionFieldsParameter,
     uniqueIdParameter,
     saveResultField,
     saveMessageField,
     logDataPage,
-    logParameter,
+    logParameter
   } = props;
 
   const theme = useTheme();
 
   // `type` is provided as "<loadType>,<mode>" e.g. "LOAD_MANIFEST,MultiDoc:SinglePage"
-  const [loadType, mode] = type.split(",") as [
-    "LOAD_SINGLEDOC" | "LOAD_MANIFEST",
-    DocMode,
-  ];
+  const [loadType, mode] = type.split(',') as ['LOAD_SINGLEDOC' | 'LOAD_MANIFEST', DocMode];
 
   // UI states
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Loading...");
-  const [documents, setDocuments] = useState<Array<Record<string, unknown>>>(
-    [],
-  );
+  const [loadingMessage, setLoadingMessage] = useState('Loading...');
+  const [documents, setDocuments] = useState<Array<Record<string, unknown>>>([]);
 
   const [samInProgress, setSamInProgress] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [warningMessages, setWarningMessages] = useState<Array<string>>([]);
-  const [hasInitialCheckCompleted, setHasInitialCheckCompleted] =
-    useState(false);
+  const [hasInitialCheckCompleted, setHasInitialCheckCompleted] = useState(false);
   const samInProgressRef = useRef(samInProgress);
   const hasInitialCheckCompletedRef = useRef(hasInitialCheckCompleted);
   const samInitCheckKeyRef = useRef<string | null>(null);
@@ -238,18 +234,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       splitAndMergeWorkStatus: loadSplitAndMerge
         ? inProgressWorkStatus && completedWorkStatus
         : false,
-      physicalSplit: loadSplitAndMerge && samType === "Physical",
-      waitForSplit:
-        loadSplitAndMerge && samType === "Physical" ? waitForSplit : false,
-      manualSplit:
-        loadSplitAndMerge && samType === "Physical" ? manualSplit : false,
+      physicalSplit: loadSplitAndMerge && samType === 'Physical',
+      waitForSplit: loadSplitAndMerge && samType === 'Physical' ? waitForSplit : false,
+      manualSplit: loadSplitAndMerge && samType === 'Physical' ? manualSplit : false,
       allowPageShuffling: loadSplitAndMerge ? allowPageShuffling : false,
       allowPageMovement: loadSplitAndMerge ? allowPageMovement : false,
       showNer: loadNER,
       openNer: loadNER ? openNER : false,
-      finishAssignmentOnSubmitNER: loadNER
-        ? finishAssignmentOnSubmitNER
-        : false,
+      finishAssignmentOnSubmitNER: loadNER ? finishAssignmentOnSubmitNER : false,
       finishAssignmentOnSubmitTransactionData: isCustomTab
         ? finishAssignmentOnSubmitTransactionData
         : false,
@@ -259,6 +251,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       isCustomTab,
       loadFromTemplate,
       currentQueue,
+      maintenanceApproach,
+      maintenanceApproachNERFlag
     }),
     [
       allowExpand,
@@ -283,11 +277,13 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       isCustomTab,
       loadFromTemplate,
       currentQueue,
+      maintenanceApproach,
+      maintenanceApproachNERFlag,
       samType,
       inProgressWorkStatus,
       completedWorkStatus,
-      updateDocumentFields,
-    ],
+      updateDocumentFields
+    ]
   );
 
   // Refs used for iframe messaging and two-gate synchronization
@@ -297,18 +293,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const payloadRef = useRef<ViewerPayload>({ ready: false, message: null });
   const nerPayloadRef = useRef<ViewerNerPayload>({
     ready: false,
-    message: null,
+    message: null
   });
   const nerMetadataPayloadRef = useRef<{
     ready: boolean;
     message: NerMetadataMessage | null;
   }>({
     ready: false,
-    message: null,
+    message: null
   });
   const transactionDataPayloadRef = useRef<ViewerTransactionDataPayload>({
     ready: false,
-    message: null,
+    message: null
   });
   const isNEROpenedRef = useRef<boolean>(false);
   const isSplitMergeOpenedRef = useRef<boolean>(false);
@@ -321,9 +317,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const expandedTargetPrevGridColumnRef = useRef<string | null>(null);
   // Stable ref to latest loadDocumentsForViewer to avoid effect re-runs on dependency changes
   const loadDocumentsForViewerRef =
-    useRef<
-      (sendMessage?: boolean, isCancelled?: () => boolean) => Promise<void>
-    >();
+    useRef<(sendMessage?: boolean, isCancelled?: () => boolean) => Promise<void>>();
 
   const subscriptionId = useUID();
 
@@ -342,19 +336,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     try {
       return new URL(mfeURL).origin;
     } catch {
-      console.warn("Invalid MFE URL provided:", mfeURL);
-      return "";
+      console.warn('Invalid MFE URL provided:', mfeURL);
+      return '';
     }
   }, [mfeURL]);
 
   const getDetailRendererContainer = useCallback((): HTMLElement | null => {
-    const CLASS_PREFIX = "DetailsRenderer__StyledDetailRenderer";
+    const CLASS_PREFIX = 'DetailsRenderer__StyledDetailRenderer';
     let current = wrapperRef.current?.parentElement ?? null;
 
     while (current) {
-      const hasMatch = Array.from(current.classList).some((cls) =>
-        cls.startsWith(CLASS_PREFIX),
-      );
+      const hasMatch = Array.from(current.classList).some(cls => cls.startsWith(CLASS_PREFIX));
       if (hasMatch) return current;
       current = current.parentElement;
     }
@@ -365,11 +357,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const restoreExpandedTarget = useCallback(() => {
     if (!expandedTargetRef.current) return;
 
-    const previous = expandedTargetPrevGridColumnRef.current ?? "";
+    const previous = expandedTargetPrevGridColumnRef.current ?? '';
     if (previous) {
       expandedTargetRef.current.style.gridColumn = previous;
     } else {
-      expandedTargetRef.current.style.removeProperty("grid-column");
+      expandedTargetRef.current.style.removeProperty('grid-column');
     }
 
     expandedTargetRef.current = null;
@@ -389,53 +381,42 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       if (expandedTargetRef.current !== target) {
         restoreExpandedTarget();
         expandedTargetRef.current = target;
-        expandedTargetPrevGridColumnRef.current = target.style.gridColumn || "";
+        expandedTargetPrevGridColumnRef.current = target.style.gridColumn || '';
       }
 
-      target.style.gridColumn = "1 / -1";
+      target.style.gridColumn = '1 / -1';
       return restoreExpandedTarget;
     }
 
     restoreExpandedTarget();
-  }, [
-    isExpanded,
-    featureFlags.allowExpand,
-    getDetailRendererContainer,
-    restoreExpandedTarget,
-  ]);
+  }, [isExpanded, featureFlags.allowExpand, getDetailRendererContainer, restoreExpandedTarget]);
 
   // Log error
   const logError = useCallback(
-    (
-      userMsg: string,
-      serverMsg: string,
-      logType: "error" | "warning" = "error",
-    ) => {
-      if (logType === "error") {
+    (userMsg: string, serverMsg: string, logType: 'error' | 'warning' = 'error') => {
+      if (logType === 'error') {
         setErrorMessage(userMsg);
-      } else if (logType === "warning") {
-        setWarningMessages((prev) =>
-          prev.includes(userMsg) ? prev : [...prev, userMsg],
-        );
+      } else if (logType === 'warning') {
+        setWarningMessages(prev => (prev.includes(userMsg) ? prev : [...prev, userMsg]));
       }
       if (!logDataPage || !logParameter) return;
       fetchWithBackoff(
         pConnRef.current,
         logDataPage,
         {
-          [logParameter]: `Case ${pConnRef.current.getCaseSummary()?.businessID}, ${serverMsg}`,
+          [logParameter]: `Case ${pConnRef.current.getCaseSummary()?.businessID}, ${serverMsg}`
         },
-        "page",
+        'page',
         {
-          maxRetries: 0,
-        },
+          maxRetries: 0
+        }
       )
-        .then(() => console.warn("Logged error:", serverMsg))
-        .catch((err) => {
-          console.error("Failed to log error to data page:", err);
+        .then(() => console.warn('Logged error:', serverMsg))
+        .catch(err => {
+          console.error('Failed to log error to data page:', err);
         });
     },
-    [logDataPage, logParameter],
+    [logDataPage, logParameter]
   );
 
   // Stable ref that always points to the latest logError without causing effects to re-run
@@ -453,11 +434,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       docLoadedTimeoutRef.current = null;
     }
     setIsLoading(true);
-    setLoadingMessage("Loading...");
+    setLoadingMessage('Loading...');
     if (!mfeURL || !type) {
       logErrorRef.current(
-        "MFE configuration is missing or invalid. Please contact system administrator.",
-        `Missing or invalid MFE configuration: URL=${mfeURL} and type=${type} are required.`,
+        'MFE configuration is missing or invalid. Please contact system administrator.',
+        `Missing or invalid MFE configuration: URL=${mfeURL} and type=${type} are required.`
       );
     } else {
       setErrorMessage(null);
@@ -482,33 +463,31 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         actionsApi.triggerFieldChange(samInProgressStatusProperty, status);
       } catch (err) {
         logErrorRef.current(
-          "Failed to update status.",
+          'Failed to update status.',
           `Failed to update correction status property from MFE Viewer: ${err}`,
-          "warning",
+          'warning'
         );
       }
     },
-    [logErrorRef, samInProgressStatusProperty],
+    [logErrorRef, samInProgressStatusProperty]
   );
 
-  const isSAMCorrectionCompleted = useCallback(async (): Promise<
-    boolean | null
-  > => {
+  const isSAMCorrectionCompleted = useCallback(async (): Promise<boolean | null> => {
     if (!samQueryDataPage?.source || !samQueryDataPage?.fields?.statusField) {
       return null;
     }
 
     const getStatusMatcher = (pipeValues?: string): RegExp | null => {
-      if (!pipeValues || typeof pipeValues !== "string") return null;
+      if (!pipeValues || typeof pipeValues !== 'string') return null;
 
       const tokens = pipeValues
-        .split("|")
-        .map((item) => item.trim())
+        .split('|')
+        .map(item => item.trim())
         .filter(Boolean)
-        .map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+        .map(item => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
       if (tokens.length === 0) return null;
-      return new RegExp(`\\b(?:${tokens.join("|")})\\b`, "i");
+      return new RegExp(`\\b(?:${tokens.join('|')})\\b`, 'i');
     };
 
     const completedMatcher = getStatusMatcher(completedStatusRegex);
@@ -519,17 +498,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         pConnRef.current,
         samQueryDataPage.source,
         pConnRef.current.resolveConfigProps(
-          pConnRef.current.getRawConfigProps()?.samQueryDataPage?.parameters,
+          pConnRef.current.getRawConfigProps()?.samQueryDataPage?.parameters
         ),
-        "page",
+        'page',
         {
-          maxRetries: 0,
+          maxRetries: 0
         },
-        true,
+        true
       )) as Record<string, unknown>;
 
       const rawStatus = res?.[samQueryDataPage.fields.statusField];
-      const status = typeof rawStatus === "string" ? rawStatus.trim() : "";
+      const status = typeof rawStatus === 'string' ? rawStatus.trim() : '';
       if (!status) return null;
 
       if (completedMatcher?.test(status)) return true;
@@ -545,22 +524,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     async (status: string) => {
       try {
         if (featureFlags.splitAndMergeWorkStatus) {
-          pConnRef.current
-            .getActionsApi()
-            .updateFieldValue(".pyStatusWork", status);
-          pConnRef.current
-            .getActionsApi()
-            .triggerFieldChange(".pyStatusWork", status);
-          await pConnRef.current
-            .getActionsApi()
-            .saveAssignment(pConnRef.current.getContextName());
-          const latestAssignmentEtag = sessionStorage.getItem(
-            LATEST_ASSIGNMENT_ETAG_KEY,
-          );
+          pConnRef.current.getActionsApi().updateFieldValue('.pyStatusWork', status);
+          pConnRef.current.getActionsApi().triggerFieldChange('.pyStatusWork', status);
+          await pConnRef.current.getActionsApi().saveAssignment(pConnRef.current.getContextName());
+          const latestAssignmentEtag = sessionStorage.getItem(LATEST_ASSIGNMENT_ETAG_KEY);
           if (latestAssignmentEtag) {
             PCore.getContainerUtils().updateCaseContextEtag(
               pConnRef.current.getContextName(),
-              latestAssignmentEtag,
+              latestAssignmentEtag
             );
           }
         }
@@ -568,7 +539,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         console.warn(`Failed to update split/merge work status: ${err}`);
       }
     },
-    [featureFlags.splitAndMergeWorkStatus],
+    [featureFlags.splitAndMergeWorkStatus]
   );
 
   useEffect(() => {
@@ -603,9 +574,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
       if (completed === null) {
         logErrorRef.current(
-          "Failed to determine status. If the issue persists, please contact system administrator.",
-          "Failed to determine correction status from MFE Viewer.",
-          "warning",
+          'Failed to determine status. If the issue persists, please contact system administrator.',
+          'Failed to determine correction status from MFE Viewer.',
+          'warning'
         );
         setSamInProgress(true);
         updateSamInProgressStatusProperty(true);
@@ -635,7 +606,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     isSAMCorrectionCompleted,
     updateSamInProgressStatusProperty,
     mfeURL,
-    type,
+    type
   ]);
 
   // Timeout guard: if iframe does not send READY in time, fail fast with a user error
@@ -648,8 +619,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     const id = window.setTimeout(() => {
       if (!isViewerReadyRef.current && !errorMessage) {
         logErrorRef.current(
-          "Viewer took too long to respond. Please try again later.",
-          `MFE Timeout error: READY event not received within ${ms}ms of loading URL=${mfeURL}`,
+          'Viewer took too long to respond. Please try again later.',
+          `MFE Timeout error: READY event not received within ${ms}ms of loading URL=${mfeURL}`
         );
         setIsLoading(false);
       }
@@ -671,22 +642,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         | OcrResponseMessage
         | HighlightMessage
         | LoadExtractionDataMessage
-        | ValidationMsgMessage,
+        | ValidationMsgMessage
     ) => {
-      console.log("[MFEViewer] Sending message to viewer:", message);
+      console.log('[MFEViewer] Sending message to viewer:', message);
       iframeRef.current?.contentWindow?.postMessage(message, viewerOrigin);
     },
-    [viewerOrigin],
+    [viewerOrigin]
   );
 
   // Two-gate dispatcher: send payload only when (1) viewer is READY and (2) payload is prepared
   // Starts a DOC_LOADED timeout after each send to catch viewer render failures
   const trySend = useCallback(() => {
-    if (
-      isViewerReadyRef.current &&
-      payloadRef.current.ready &&
-      payloadRef.current.message
-    ) {
+    if (isViewerReadyRef.current && payloadRef.current.ready && payloadRef.current.message) {
       const isInitialCheckCompleted = hasInitialCheckCompletedRef.current;
       const isSamInProgress = samInProgressRef.current;
 
@@ -698,17 +665,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       // Always derive showSplitMerge from latest state at send-time to avoid stale
       // payload values when async SAM initialization resolves after payload build.
       let messageToSend = payloadRef.current.message;
-      if (
-        "showSplitMerge" in messageToSend &&
-        typeof messageToSend.showSplitMerge === "boolean"
-      ) {
+      if ('showSplitMerge' in messageToSend && typeof messageToSend.showSplitMerge === 'boolean') {
         messageToSend = {
           ...messageToSend,
-          showSplitMerge: featureFlags.splitAndMerge && !isSamInProgress,
+          showSplitMerge: featureFlags.splitAndMerge && !isSamInProgress
         };
         payloadRef.current = {
           ...payloadRef.current,
-          message: messageToSend,
+          message: messageToSend
         };
       }
 
@@ -721,8 +685,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       const ms = mfeTimeout > 0 ? mfeTimeout : 30000;
       docLoadedTimeoutRef.current = window.setTimeout(() => {
         logErrorRef.current(
-          "Document took too long to load. Please try again later.",
-          `MFE DOC_LOADED timeout: event not received within ${ms}ms after sending payload to URL=${mfeURL}`,
+          'Document took too long to load. Please try again later.',
+          `MFE DOC_LOADED timeout: event not received within ${ms}ms after sending payload to URL=${mfeURL}`
         );
         setIsLoading(false);
       }, ms);
@@ -746,11 +710,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   }, [sendToViewer]);
 
   const trySendNer = useCallback(() => {
-    if (
-      isViewerReadyRef.current &&
-      nerPayloadRef.current.ready &&
-      nerPayloadRef.current.message
-    ) {
+    if (isViewerReadyRef.current && nerPayloadRef.current.ready && nerPayloadRef.current.message) {
       sendToViewer(nerPayloadRef.current.message);
     }
   }, [sendToViewer]);
@@ -770,18 +730,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     (caps: Array<Record<string, unknown>>) => {
       try {
         if (!Array.isArray(caps)) return [];
-        return caps.map((cap) => ({
+        return caps.map(cap => ({
           id: cap[idField] as string,
           value: cap[valueField] as string,
           page: cap[pageNumberField] as number,
           box_2d: splitStringToIntArray(cap[box2dField] as string),
-          color: cap[colorField ?? ""] as string | undefined,
+          color: cap[colorField ?? ''] as string | undefined
         }));
       } catch (err) {
         return [];
       }
     },
-    [idField, valueField, box2dField, pageNumberField, colorField],
+    [idField, valueField, box2dField, pageNumberField, colorField]
   );
 
   const updateTransientDocumentId = useCallback(
@@ -792,18 +752,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         actionsApi.updateFieldValue(transientDocumentIdField, docId);
         actionsApi.triggerFieldChange(transientDocumentIdField, docId);
       } catch (err) {
-        console.warn("Failed to update transient document ID field:", err);
+        console.warn('Failed to update transient document ID field:', err);
       }
     },
-    [transientDocumentIdField],
+    [transientDocumentIdField]
   );
 
   const setCaptureWarningVisible = useCallback((show: boolean) => {
-    setWarningMessages((prev) => {
+    setWarningMessages(prev => {
       const hasWarning = prev.includes(NO_CAPTURES_WARNING_MESSAGE);
       if (show && !hasWarning) return [...prev, NO_CAPTURES_WARNING_MESSAGE];
       if (!show && hasWarning) {
-        return prev.filter((msg) => msg !== NO_CAPTURES_WARNING_MESSAGE);
+        return prev.filter(msg => msg !== NO_CAPTURES_WARNING_MESSAGE);
       }
       return prev;
     });
@@ -814,17 +774,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     (cats: Array<Record<string, unknown>>) => {
       try {
         if (!Array.isArray(cats) || !samCategoryListField) return [];
-        return cats.map((cat) => cat[samCategoryListField] as string);
+        return cats.map(cat => cat[samCategoryListField] as string);
       } catch (err) {
         logErrorRef.current(
-          "Failed to load category list. Viewer may not display categories correctly.",
+          'Failed to load category list. Viewer may not display categories correctly.',
           `Error fetching category list for MFE Viewer: ${err}`,
-          "warning",
+          'warning'
         );
         return [];
       }
     },
-    [samCategoryListField],
+    [samCategoryListField]
   );
 
   // Build single document message payload
@@ -832,7 +792,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     async (
       docs: Array<Record<string, unknown>>,
       formattedCaps: CaptureItem[],
-      formattedCategoryList: string[],
+      formattedCategoryList: string[]
     ): Promise<SingleDocumentMessage> => {
       const buffer = await getFileArrayBuffer(docs[0][fileURLField] as URL);
       const message: SingleDocumentMessage = {
@@ -856,10 +816,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         Click2Pick: featureFlags.Click2Pick,
         currentPageNum: docs[0][currentPageNumField] as number,
         allowOcrOnDemand: featureFlags.Click2Pick,
-        initialZoom: "page-width",
+        initialZoom: 'page-width',
         isCustomTab: featureFlags.isCustomTab,
         loadFromTemplate: featureFlags.loadFromTemplate,
         currentQueue: featureFlags.currentQueue,
+        maintenanceApproach: {
+          approach: featureFlags.maintenanceApproach,
+          nerFlag: featureFlags.maintenanceApproachNERFlag
+        }
       };
 
       if (
@@ -869,19 +833,15 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         pageCategoryField &&
         pageCategoryPagesField
       ) {
-        const categories = docs[0][categoryField] as Array<
-          Record<string, unknown>
-        >;
+        const categories = docs[0][categoryField] as Array<Record<string, unknown>>;
         message.categories = categories.map((cat: Record<string, unknown>) => ({
           pageCategoryID: cat[pageCategoryIDField] as string,
           label: cat[pageCategoryField] as string,
           ...(cat[pageCategoryPagesField]
             ? {
-                pages: splitStringToIntArray(
-                  cat[pageCategoryPagesField] as string,
-                ),
+                pages: splitStringToIntArray(cat[pageCategoryPagesField] as string)
               }
-            : {}),
+            : {})
         }));
       }
       return message;
@@ -897,8 +857,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       pageCategoryField,
       pageCategoryPagesField,
       featureFlags,
-      samInProgress,
-    ],
+      samInProgress
+    ]
   );
 
   const getDocPageCategories = useCallback(
@@ -918,19 +878,12 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         category: cat[pageCategoryField] as string,
         ...(pageCategoryPagesField && cat[pageCategoryPagesField]
           ? {
-              pages: splitStringToIntArray(
-                cat[pageCategoryPagesField] as string,
-              ),
+              pages: splitStringToIntArray(cat[pageCategoryPagesField] as string)
             }
-          : {}),
+          : {})
       }));
     },
-    [
-      categoryField,
-      pageCategoryIDField,
-      pageCategoryField,
-      pageCategoryPagesField,
-    ],
+    [categoryField, pageCategoryIDField, pageCategoryField, pageCategoryPagesField]
   );
 
   // Build multi document message payload
@@ -939,11 +892,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       docs: Array<Record<string, unknown>>,
       activeIndex: number,
       formattedCaps: CaptureItem[],
-      formattedCategoryList: string[],
+      formattedCategoryList: string[]
     ): Promise<MultiDocumentMessage> => {
-      const activeBuffer = await getFileArrayBuffer(
-        docs[activeIndex][fileURLField] as URL,
-      );
+      const activeBuffer = await getFileArrayBuffer(docs[activeIndex][fileURLField] as URL);
 
       const message: MultiDocumentMessage = {
         showSearch: featureFlags.showSearch,
@@ -953,7 +904,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         manifest: {
           mode: mode as MultiDocMode,
           categoryList: formattedCategoryList,
-          documents: docs.map((doc) => {
+          documents: docs.map(doc => {
             const pageCategories = getDocPageCategories(doc);
             const primaryCategory = pageCategories[0];
 
@@ -961,16 +912,16 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               id: doc[documentIdField] as string,
               name: doc[fileNameField] as string,
               currentPageNum: doc[currentPageNumField] as number,
-              ...(mode === "MultiDoc:SinglePage"
+              ...(mode === 'MultiDoc:SinglePage'
                 ? {
                     category: primaryCategory?.category,
-                    pageCategoryID: primaryCategory?.pageCategoryID,
+                    pageCategoryID: primaryCategory?.pageCategoryID
                   }
                 : {
-                    pageCategories,
-                  }),
+                    pageCategories
+                  })
             };
-          }),
+          })
         },
         activeDocId: docs[activeIndex][documentIdField] as string,
         activeBuffer,
@@ -986,10 +937,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         allowPageMovement: featureFlags.allowPageMovement,
         Click2Pick: featureFlags.Click2Pick,
         allowOcrOnDemand: featureFlags.Click2Pick,
-        initialZoom: "page-width",
+        initialZoom: 'page-width',
         isCustomTab: featureFlags.isCustomTab,
         loadFromTemplate: featureFlags.loadFromTemplate,
         currentQueue: featureFlags.currentQueue,
+        maintenanceApproach: {
+          approach: featureFlags.maintenanceApproach,
+          nerFlag: featureFlags.maintenanceApproachNERFlag
+        }
       };
 
       return message;
@@ -1004,15 +959,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       currentPageNumField,
       mode,
       featureFlags,
-      getDocPageCategories,
-    ],
+      getDocPageCategories
+    ]
   );
 
   // Collect parameters for field registration
   const getParametersForRegistration = useCallback(() => {
     let propParameterArray: Array<string> = [];
-    const referenceListParameters =
-      pConnRef.current.getRawConfigProps()?.parameters;
+    const referenceListParameters = pConnRef.current.getRawConfigProps()?.parameters;
     if (referenceListParameters) {
       propParameterArray = getPropertyParameterArray(referenceListParameters);
     }
@@ -1026,10 +980,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         fetchWithBackoff(
           pConnRef.current,
           referenceList,
-          pConnRef.current.resolveConfigProps(
-            pConnRef.current.getRawConfigProps()?.parameters,
-          ),
-          "list",
+          pConnRef.current.resolveConfigProps(pConnRef.current.getRawConfigProps()?.parameters),
+          'list'
         ),
         // Fetch category list for split and merge if enabled
         featureFlags.splitAndMerge && samCategoryReferenceList?.referenceList
@@ -1037,36 +989,27 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               pConnRef.current,
               samCategoryReferenceList?.referenceList,
               pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()?.samCategoryReferenceList
-                  ?.parameters,
+                pConnRef.current.getRawConfigProps()?.samCategoryReferenceList?.parameters
               ),
-              "list",
-            ).catch((err) => {
+              'list'
+            ).catch(err => {
               logErrorRef.current(
-                "Failed to load category list. Viewer may not display categories correctly.",
+                'Failed to load category list. Viewer may not display categories correctly.',
                 `Error fetching category list for MFE Viewer: ${err}`,
-                "warning",
+                'warning'
               );
               return [];
             })
-          : Promise.resolve([]),
+          : Promise.resolve([])
       ])) as [Array<Record<string, unknown>>, Array<Record<string, unknown>>];
 
-      if (
-        (isCancelled?.() ?? false) ||
-        !Array.isArray(docs) ||
-        docs.length === 0
-      )
-        return;
+      if ((isCancelled?.() ?? false) || !Array.isArray(docs) || docs.length === 0) return;
 
       let activeIndex = 0;
       if (loadType === LOAD_SINGLEDOC) {
         updateTransientDocumentId(docs[activeIndex][documentIdField] as string);
-      } else if (
-        activeDocField &&
-        docs.findIndex((doc) => doc[activeDocField] === true) !== -1
-      ) {
-        activeIndex = docs.findIndex((doc) => doc[activeDocField] === true);
+      } else if (activeDocField && docs.findIndex(doc => doc[activeDocField] === true) !== -1) {
+        activeIndex = docs.findIndex(doc => doc[activeDocField] === true);
         updateTransientDocumentId(docs[activeIndex][documentIdField] as string);
       }
 
@@ -1076,12 +1019,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               pConnRef.current,
               capturesReferenceList?.referenceList,
               pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()?.capturesReferenceList
-                  ?.parameters,
+                pConnRef.current.getRawConfigProps()?.capturesReferenceList?.parameters
               ),
-              "list",
-            ).catch((err) => {
-              console.warn("Failed to load captures: ", err);
+              'list'
+            ).catch(err => {
+              console.warn('Failed to load captures: ', err);
               return [];
             })
           : Promise.resolve([]),
@@ -1090,15 +1032,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               pConnRef.current,
               nerReferenceList?.referenceList,
               pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()?.nerReferenceList
-                  ?.parameters,
+                pConnRef.current.getRawConfigProps()?.nerReferenceList?.parameters
               ),
-              "list",
-            ).catch((err) => {
+              'list'
+            ).catch(err => {
               logErrorRef.current(
-                "Failed to load NER entities. Viewer may not display NER correctly.",
+                'Failed to load NER entities. Viewer may not display NER correctly.',
                 `Error fetching NER entities for MFE Viewer: ${err}`,
-                "warning",
+                'warning'
               );
               return [];
             })
@@ -1108,34 +1049,29 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               pConnRef.current,
               transactionDataReferenceList?.referenceList,
               pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()
-                  ?.transactionDataReferenceList?.parameters,
+                pConnRef.current.getRawConfigProps()?.transactionDataReferenceList?.parameters
               ),
-              "list",
-            ).catch((err) => {
+              'list'
+            ).catch(err => {
               logErrorRef.current(
-                "Failed to load transaction data. Viewer may not display duplicates correctly.",
+                'Failed to load transaction data. Viewer may not display duplicates correctly.',
                 `Error fetching transaction data for MFE Viewer: ${err}`,
-                "warning",
+                'warning'
               );
               return [];
             })
-          : Promise.resolve([]),
+          : Promise.resolve([])
       ])) as [
         Array<Record<string, unknown>>,
         Array<Record<string, unknown>>,
-        Array<Record<string, unknown>>,
+        Array<Record<string, unknown>>
       ];
 
-      if (
-        featureFlags.showNer &&
-        nerReferenceList?.referenceList &&
-        ner.length === 0
-      ) {
+      if (featureFlags.showNer && nerReferenceList?.referenceList && ner.length === 0) {
         logErrorRef.current(
-          "Failed to load NER entities. Viewer may not display NER correctly.",
+          'Failed to load NER entities. Viewer may not display NER correctly.',
           `Error fetching NER entities for MFE Viewer: No NER entities returned in data page: ${nerReferenceList?.referenceList}`,
-          "warning",
+          'warning'
         );
       }
 
@@ -1145,9 +1081,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         transactions.length === 0
       ) {
         logErrorRef.current(
-          "Failed to load transaction data. Viewer may not display duplicates correctly.",
+          'Failed to load transaction data. Viewer may not display duplicates correctly.',
           `Error fetching transaction data for MFE Viewer: No transaction data returned in data page: ${transactionDataReferenceList?.referenceList}`,
-          "warning",
+          'warning'
         );
       }
 
@@ -1165,32 +1101,19 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       setDocuments(docs);
       const formattedCaps = getCaptures(caps);
       let formattedCategoryList: string[] = [];
-      if (
-        featureFlags.splitAndMerge &&
-        Array.isArray(categoryList) &&
-        categoryList.length === 0
-      ) {
+      if (featureFlags.splitAndMerge && Array.isArray(categoryList) && categoryList.length === 0) {
         logErrorRef.current(
-          "Error loading category list for split and merge. Viewer may not display categories correctly.",
+          'Error loading category list for split and merge. Viewer may not display categories correctly.',
           `No categories found for requested document with in data page: ${samCategoryReferenceList?.referenceList} for MFE Viewer.`,
-          "warning",
+          'warning'
         );
       } else {
         formattedCategoryList = getCategoryList(categoryList);
       }
       const message =
         loadType === LOAD_SINGLEDOC
-          ? await buildSingleDocMessage(
-              docs,
-              formattedCaps,
-              formattedCategoryList,
-            )
-          : await buildMultiDocMessage(
-              docs,
-              activeIndex,
-              formattedCaps,
-              formattedCategoryList,
-            );
+          ? await buildSingleDocMessage(docs, formattedCaps, formattedCategoryList)
+          : await buildMultiDocMessage(docs, activeIndex, formattedCaps, formattedCategoryList);
 
       if (isCancelled?.() ?? false) return;
       payloadRef.current = { ready: true, message };
@@ -1203,22 +1126,22 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         transactions[0][transactionDataJsonField]
       ) {
         const transactionDataMessage = JSON.parse(
-          transactions[0][transactionDataJsonField] as string,
+          transactions[0][transactionDataJsonField] as string
         ) as LoadExtractionDataMessage;
         transactionDataPayloadRef.current = {
           ready: true,
-          message: transactionDataMessage,
+          message: transactionDataMessage
         };
         if (sendMessage) trySendTransactionData();
       }
 
       if (ner.length > 0 && nerJsonField && ner[0][nerJsonField]) {
         const docNerResponseMessage = JSON.parse(
-          ner[0][nerJsonField] as string,
+          ner[0][nerJsonField] as string
         ) as NerDocResponseMessage;
         nerPayloadRef.current = {
           ready: true,
-          message: docNerResponseMessage,
+          message: docNerResponseMessage
         };
         if (sendMessage) trySendNer();
       }
@@ -1243,8 +1166,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       nerJsonField,
       trySendNer,
       transactionDataJsonField,
-      trySendTransactionData,
-    ],
+      trySendTransactionData
+    ]
   );
 
   // Sync the latest loadDocumentsForViewer to ref to avoid effect re-runs
@@ -1263,9 +1186,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       return;
     }
 
-    setLoadingMessage(
-      `Loading document${loadType === LOAD_SINGLEDOC ? "" : "s"}...`,
-    );
+    setLoadingMessage(`Loading document${loadType === LOAD_SINGLEDOC ? '' : 's'}...`);
 
     const run = async () => {
       try {
@@ -1273,8 +1194,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       } catch (err) {
         if (!cancelled) {
           logErrorRef.current(
-            "Failed to load documents. Please try again later.",
-            `Failed to load documents from dataPage ${referenceList} for MFE Viewer: ${err}`,
+            'Failed to load documents. Please try again later.',
+            `Failed to load documents from dataPage ${referenceList} for MFE Viewer: ${err}`
           );
           setIsLoading(false);
         }
@@ -1290,18 +1211,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       getParametersForRegistration(),
       () => {
         setIsLoading(true);
-        setLoadingMessage("Updating documents...");
-        run().catch((err) => {
+        setLoadingMessage('Updating documents...');
+        run().catch(err => {
           if (!cancelled) {
             logErrorRef.current(
-              "Failed to load documents. Please try again later.",
-              `Failed to load documents from dataPage ${referenceList} for MFE Viewer: ${err}`,
+              'Failed to load documents. Please try again later.',
+              `Failed to load documents from dataPage ${referenceList} for MFE Viewer: ${err}`
             );
             setIsLoading(false);
           }
         });
       },
-      subscriptionId,
+      subscriptionId
     );
 
     return () => {
@@ -1312,7 +1233,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         pConnRef.current.getContextName(),
         pConnRef.current.getPageReference(),
         getParametersForRegistration(),
-        subscriptionId,
+        subscriptionId
       );
     };
   }, [
@@ -1322,7 +1243,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     mfeURL,
     type,
     subscriptionId,
-    getParametersForRegistration,
+    getParametersForRegistration
   ]);
   // Viewer requests additional document buffer by docId
 
@@ -1339,14 +1260,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         pConnRef.current,
         nounMasterReferenceList.referenceList,
         {},
-        "list",
+        'list'
       )) as Array<Record<string, unknown>>;
 
       if (cancelled) return;
 
-      const nounMasterList = nouns.map((item) => ({
+      const nounMasterList = nouns.map(item => ({
         field: item[nounField] as string,
-        classification: item[nounClassificationField] as string,
+        classification: item[nounClassificationField] as string
       }));
 
       nerMetadataPayloadRef.current = {
@@ -1354,24 +1275,24 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         message: {
           type: LOAD_NER_METADATA,
           noun_types: {
-            all_noun_types: nounMasterList,
+            all_noun_types: nounMasterList
           },
           readOnlyNer: featureFlags.readOnlyNer,
           allowAcknowledgement: featureFlags.allowAcknowledgement,
           allowOcrOnDemand: featureFlags.allowOcrOnDemand,
-          columnNames: columnNamesNER.split(","),
-        },
+          columnNames: columnNamesNER.split(',')
+        }
       };
 
       trySendNerMetadata();
     };
 
-    loadNerMetadataDataPages().catch((err) => {
+    loadNerMetadataDataPages().catch(err => {
       if (cancelled) return;
       logErrorRef.current(
-        "Failed to load NER metadata. Viewer may not display noun classification correctly.",
+        'Failed to load NER metadata. Viewer may not display noun classification correctly.',
         `Error loading NER metadata data pages for MFE Viewer: ${err}`,
-        "warning",
+        'warning'
       );
       nerMetadataPayloadRef.current = { ready: false, message: null };
     });
@@ -1388,7 +1309,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     featureFlags.allowAcknowledgement,
     featureFlags.allowOcrOnDemand,
     columnNamesNER,
-    trySendNerMetadata,
+    trySendNerMetadata
   ]);
 
   const onViewerReady = useCallback(() => {
@@ -1411,7 +1332,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     trySendNerMetadata,
     nerReferenceList,
     transactionDataReferenceList,
-    nounMasterReferenceList,
+    nounMasterReferenceList
   ]);
 
   const onDocLoaded = useCallback((data: Record<string, unknown>) => {
@@ -1421,25 +1342,21 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       docLoadedTimeoutRef.current = null;
     }
     setIsLoading(false);
-    console.log(
-      `[MFEViewer] Document loaded: ${data.fileName} (${data.pageCount} pages)`,
-    );
+    console.log(`[MFEViewer] Document loaded: ${data.fileName} (${data.pageCount} pages)`);
   }, []);
 
   const onDocRequest = useCallback(
     async (data: Record<string, unknown>) => {
-      if (!data.docId || typeof data.docId !== "string") return;
+      if (!data.docId || typeof data.docId !== 'string') return;
       setIsLoading(true);
       payloadRef.current = { ready: false, message: null };
-      setLoadingMessage("Loading requested document...");
+      setLoadingMessage('Loading requested document...');
       console.log(`[MFEViewer]  Document requested: ${data.docId}`);
-      const docIndex = documents.findIndex(
-        (doc) => doc[documentIdField] === data.docId,
-      );
+      const docIndex = documents.findIndex(doc => doc[documentIdField] === data.docId);
       if (docIndex === -1) {
         logErrorRef.current(
-          "Unable to find requested document. Please contact system administrator.",
-          `Requested document with id=${data.docId} not found in document list for MFE Viewer.`,
+          'Unable to find requested document. Please contact system administrator.',
+          `Requested document with id=${data.docId} not found in document list for MFE Viewer.`
         );
         setIsLoading(false);
         return;
@@ -1453,12 +1370,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               pConnRef.current,
               capturesReferenceList?.referenceList,
               pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()?.capturesReferenceList
-                  ?.parameters,
+                pConnRef.current.getRawConfigProps()?.capturesReferenceList?.parameters
               ),
-              "list",
+              'list'
             )
-          : Promise.resolve([]),
+          : Promise.resolve([])
       ])) as [ArrayBuffer, Array<Record<string, unknown>>];
 
       if (
@@ -1472,7 +1388,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         logErrorRef.current(
           NO_CAPTURES_WARNING_MESSAGE,
           `No captures found for requested document with id=${data.docId} in captures data page for MFE Viewer.`,
-          "warning",
+          'warning'
         );
       } else {
         captureAvailabilityByDocRef.current[data.docId] = true;
@@ -1486,14 +1402,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           docId: data.docId,
           buffer,
           captures: getCaptures(caps),
-          persistHighlights: featureFlags.captures,
-        },
+          persistHighlights: featureFlags.captures
+        }
       };
       trySend();
 
       if (isSplitMergeOpenedRef.current) {
         setIsLoading(false);
-        setLoadingMessage("Loading...");
+        setLoadingMessage('Loading...');
       }
     },
     [
@@ -1505,8 +1421,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       getCaptures,
       trySend,
       setCaptureWarningVisible,
-      updateTransientDocumentId,
-    ],
+      updateTransientDocumentId
+    ]
   );
 
   const onViewerStateChanged = useCallback(
@@ -1525,10 +1441,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         actionsApi.updateFieldValue(changedFileNameField, data.fileName);
         actionsApi.updateFieldValue(changedDocIDField, data.docId);
         actionsApi.updateFieldValue(changedDocLabelField, data.docLabel);
-        actionsApi.updateFieldValue(
-          changedPageCategoryIDField,
-          data.pageCategoryID,
-        );
+        actionsApi.updateFieldValue(changedPageCategoryIDField, data.pageCategoryID);
         actionsApi.updateFieldValue(changedModeField, data.mode);
         actionsApi.updateFieldValue(changedTotalDocsField, data.totalDocs);
 
@@ -1538,10 +1451,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         actionsApi.triggerFieldChange(changedFileNameField, data.fileName);
         actionsApi.triggerFieldChange(changedDocIDField, data.docId);
         actionsApi.triggerFieldChange(changedDocLabelField, data.docLabel);
-        actionsApi.triggerFieldChange(
-          changedPageCategoryIDField,
-          data.pageCategoryID,
-        );
+        actionsApi.triggerFieldChange(changedPageCategoryIDField, data.pageCategoryID);
         actionsApi.triggerFieldChange(changedModeField, data.mode);
         actionsApi.triggerFieldChange(changedTotalDocsField, data.totalDocs);
 
@@ -1549,23 +1459,22 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         updateTransientDocumentId(data.docId as string);
 
         if (featureFlags.updateDocumentFields) {
-          const currentContent =
-            pConnRef.current.getDataObject()?.caseInfo?.content ?? {};
+          const currentContent = pConnRef.current.getDataObject()?.caseInfo?.content ?? {};
 
           const resolvedDocumentFields =
-            typeof documentFields === "object"
+            typeof documentFields === 'object'
               ? Object.keys(documentFields).reduce(
                   (acc, key) => {
                     const field = documentFields[key];
-                    if (typeof field === "string") {
+                    if (typeof field === 'string') {
                       acc[key] = pConnRef.current.getValue(
                         field,
-                        pConnRef.current.getPageReference(),
+                        pConnRef.current.getPageReference()
                       );
                     }
                     return acc;
                   },
-                  {} as Record<string, unknown>,
+                  {} as Record<string, unknown>
                 )
               : {};
 
@@ -1573,12 +1482,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             caseInfo: {
               content: {
                 ...currentContent,
-                ...(typeof resolvedDocumentFields === "object" &&
-                resolvedDocumentFields !== null
+                ...(typeof resolvedDocumentFields === 'object' && resolvedDocumentFields !== null
                   ? resolvedDocumentFields
-                  : {}),
-              },
-            },
+                  : {})
+              }
+            }
           });
         }
 
@@ -1586,17 +1494,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         // only sends DOC_REQUEST for documents it hasn't fetched yet, cached document
         // navigation only surfaces here. The cache is already populated by
         // loadDocumentsForViewer/onDocRequest, so this is a cheap lookup, not a fetch.
-        if (featureFlags.captures && typeof data.docId === "string") {
+        if (featureFlags.captures && typeof data.docId === 'string') {
           const cached = captureAvailabilityByDocRef.current[data.docId];
-          if (typeof cached === "boolean") {
+          if (typeof cached === 'boolean') {
             setCaptureWarningVisible(!cached);
           }
         }
       } catch (err) {
         logErrorRef.current(
-          "Failed to update viewer state on viewer event. Some fields may not display correctly.",
+          'Failed to update viewer state on viewer event. Some fields may not display correctly.',
           `Error updating fields on viewer state change: ${err}`,
-          "warning",
+          'warning'
         );
       }
     },
@@ -1615,8 +1523,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       featureFlags.captures,
       setCaptureWarningVisible,
       documentFields,
-      featureFlags.updateDocumentFields,
-    ],
+      featureFlags.updateDocumentFields
+    ]
   );
 
   const onDocLoadError = useCallback((data: Record<string, unknown>) => {
@@ -1630,7 +1538,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     logErrorRef.current(
       `Failed to load document. Please try again later.`,
       `MFE Viewer reported DOC_LOAD_ERROR(${code}) for ${docId}: ${reason}`,
-      "warning",
+      'warning'
     );
   }, []);
 
@@ -1638,7 +1546,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     (data: Record<string, unknown>) => {
       if (featureFlags.allowExpand) setIsExpanded(true);
       isSplitMergeOpenedRef.current = true;
-      console.log("[MFEViewer] Split and merge opened:", data.fileName);
+      console.log('[MFEViewer] Split and merge opened:', data.fileName);
 
       if (isSAMOpenField) {
         try {
@@ -1649,19 +1557,16 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             .getActionsApi()
             .triggerFieldChange(isSAMOpenField, isSplitMergeOpenedRef.current);
         } catch (err) {
-          console.warn(
-            "Failed to update isSAMOpenField on viewer state change:",
-            err,
-          );
+          console.warn('Failed to update isSAMOpenField on viewer state change:', err);
         }
       }
     },
-    [featureFlags.allowExpand, isSAMOpenField],
+    [featureFlags.allowExpand, isSAMOpenField]
   );
 
   const onSplitMergeDrafted = useCallback(() => {
     isSplitMergeOpenedRef.current = true;
-    console.log("[MFEViewer] Split and merge drafted");
+    console.log('[MFEViewer] Split and merge drafted');
     if (isSAMOpenField) {
       try {
         pConnRef.current
@@ -1671,36 +1576,31 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           .getActionsApi()
           .triggerFieldChange(isSAMOpenField, isSplitMergeOpenedRef.current);
       } catch (err) {
-        console.warn(
-          "Failed to update isSAMOpenField on viewer state change:",
-          err,
-        );
+        console.warn('Failed to update isSAMOpenField on viewer state change:', err);
       }
     }
   }, [isSAMOpenField]);
 
   const onRetriggerClicked = useCallback(
     async (data: Record<string, unknown>) => {
-      console.log(
-        `[MFEViewer] Retrigger clicked: ${data.reason ?? "user_click"}`,
-      );
+      console.log(`[MFEViewer] Retrigger clicked: ${data.reason ?? 'user_click'}`);
       isSplitMergeOpenedRef.current = false;
-      if (data && data.status === "error") return;
+      if (data && data.status === 'error') return;
       setHasInitialCheckCompleted(true);
       setSamInProgress(true);
       updateSamInProgressStatusProperty(true);
       if (payloadRef.current.message) {
         const updatedMessage =
-          "showSplitMerge" in payloadRef.current.message
+          'showSplitMerge' in payloadRef.current.message
             ? {
                 ...payloadRef.current.message,
-                showSplitMerge: false,
+                showSplitMerge: false
               }
             : payloadRef.current.message;
 
         payloadRef.current = {
           ...payloadRef.current,
-          message: updatedMessage,
+          message: updatedMessage
         };
         sendToViewer(updatedMessage);
       }
@@ -1709,12 +1609,12 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       if (transactionDataPayloadRef.current.message) {
         const updatedTransactionMessage = {
           ...transactionDataPayloadRef.current?.message,
-          readOnly: true,
+          readOnly: true
         };
 
         transactionDataPayloadRef.current = {
           ...transactionDataPayloadRef.current,
-          message: updatedTransactionMessage,
+          message: updatedTransactionMessage
         };
         sendToViewer(updatedTransactionMessage);
       }
@@ -1722,16 +1622,16 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       // Make NER view Read Only
       if (nerMetadataPayloadRef.current.message) {
         const updatedNerMetadataMessage =
-          "readOnlyNer" in nerMetadataPayloadRef.current.message
+          'readOnlyNer' in nerMetadataPayloadRef.current.message
             ? {
                 ...nerMetadataPayloadRef.current.message,
-                readOnlyNer: true,
+                readOnlyNer: true
               }
             : nerMetadataPayloadRef.current.message;
 
         nerMetadataPayloadRef.current = {
           ...nerMetadataPayloadRef.current,
-          message: updatedNerMetadataMessage,
+          message: updatedNerMetadataMessage
         };
         sendToViewer(updatedNerMetadataMessage);
       }
@@ -1747,10 +1647,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             .getActionsApi()
             .triggerFieldChange(isSAMOpenField, isSplitMergeOpenedRef.current);
         } catch (err) {
-          console.warn(
-            "Failed to update isSAMOpenField on viewer state change:",
-            err,
-          );
+          console.warn('Failed to update isSAMOpenField on viewer state change:', err);
         }
       }
 
@@ -1762,8 +1659,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       updateSamInProgressStatusProperty,
       isSAMOpenField,
       updateSplitMergeWorkStatus,
-      inProgressWorkStatus,
-    ],
+      inProgressWorkStatus
+    ]
   );
 
   const onSplitMergeExited = useCallback(
@@ -1771,9 +1668,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       if (featureFlags.allowExpand) setIsExpanded(false);
 
       isSplitMergeOpenedRef.current = false;
-      console.log(
-        `[MFEViewer] Split and merge exited: ${data.reason ?? "user_exit"}`,
-      );
+      console.log(`[MFEViewer] Split and merge exited: ${data.reason ?? 'user_exit'}`);
 
       if (isSAMOpenField) {
         try {
@@ -1784,31 +1679,28 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             .getActionsApi()
             .triggerFieldChange(isSAMOpenField, isSplitMergeOpenedRef.current);
         } catch (err) {
-          console.warn(
-            "Failed to update isSAMOpenField on viewer state change:",
-            err,
-          );
+          console.warn('Failed to update isSAMOpenField on viewer state change:', err);
         }
       }
     },
-    [featureFlags.allowExpand, isSAMOpenField],
+    [featureFlags.allowExpand, isSAMOpenField]
   );
 
   const onAllDocRequest = useCallback(async () => {
     if (!Array.isArray(documents) || documents.length === 0) {
       logErrorRef.current(
-        "No documents available to process for split/merge.",
-        "ALL_DOC_REQUEST received but documents list is empty.",
-        "warning",
+        'No documents available to process for split/merge.',
+        'ALL_DOC_REQUEST received but documents list is empty.',
+        'warning'
       );
     }
 
     setIsLoading(true);
-    setLoadingMessage("Loading all documents...");
+    setLoadingMessage('Loading all documents...');
 
     try {
       const settled = await Promise.allSettled(
-        documents.map(async (doc) => {
+        documents.map(async doc => {
           const id = doc[documentIdField] as string;
           const name = doc[fileNameField] as string;
           const pageCategories = getDocPageCategories(doc);
@@ -1817,39 +1709,38 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           const category = primaryCategory?.category;
           const buffer = await getFileArrayBuffer(doc[fileURLField] as URL);
           return { id, name, pageCategoryID, category, buffer };
-        }),
+        })
       );
 
       const categoryList = await fetchWithBackoff(
         pConnRef.current,
         samCategoryReferenceList?.referenceList,
         pConnRef.current.resolveConfigProps(
-          pConnRef.current.getRawConfigProps()?.samCategoryReferenceList
-            ?.parameters,
+          pConnRef.current.getRawConfigProps()?.samCategoryReferenceList?.parameters
         ),
-        "list",
+        'list'
       );
 
       const fulfilledResults = settled.filter(
         (
-          result,
+          result
         ): result is PromiseFulfilledResult<{
           id: string;
           name: string;
           pageCategoryID: string;
           category: string;
           buffer: ArrayBuffer;
-        }> => result.status === "fulfilled",
+        }> => result.status === 'fulfilled'
       );
 
-      const allDocuments = fulfilledResults.map((result) => result.value);
+      const allDocuments = fulfilledResults.map(result => result.value);
 
       const failedCount = settled.length - allDocuments.length;
       if (failedCount > 0) {
         logErrorRef.current(
-          "Some documents could not be prepared for split/merge.",
+          'Some documents could not be prepared for split/merge.',
           `ALL_DOC_REQUEST partial failure: ${failedCount} of ${settled.length} document buffers failed to load.`,
-          "warning",
+          'warning'
         );
       }
 
@@ -1865,17 +1756,15 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         allowPageShuffling: featureFlags.allowPageShuffling,
         allowPageMovement: featureFlags.allowPageMovement,
         manifest: {
-          mode: "MultiDoc:SinglePage",
-          categoryList: getCategoryList(
-            categoryList as Array<Record<string, unknown>>,
-          ),
-          documents: allDocuments,
-        },
+          mode: 'MultiDoc:SinglePage',
+          categoryList: getCategoryList(categoryList as Array<Record<string, unknown>>),
+          documents: allDocuments
+        }
       });
     } catch (err) {
       logErrorRef.current(
-        "Failed to prepare documents for split/merge. Please try again later.",
-        `Failed processing ALL_DOC_REQUEST: ${err}`,
+        'Failed to prepare documents for split/merge. Please try again later.',
+        `Failed processing ALL_DOC_REQUEST: ${err}`
       );
     } finally {
       setIsLoading(false);
@@ -1898,7 +1787,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     sendToViewer,
     getCategoryList,
     samCategoryReferenceList?.referenceList,
-    samInProgress,
+    samInProgress
   ]);
 
   const handleRefresh = useCallback(async () => {
@@ -1906,7 +1795,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
     setIsRefreshing(true);
     setIsLoading(true);
-    setLoadingMessage("Checking for updated documents...");
+    setLoadingMessage('Checking for updated documents...');
 
     try {
       const isCompleted = await isSAMCorrectionCompleted();
@@ -1915,19 +1804,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         // Status is completed: update state and reload documents (which fires the event with showSplitMerge: true)
         setSamInProgress(false);
         updateSamInProgressStatusProperty(false);
-        setLoadingMessage("Updating documents...");
+        setLoadingMessage('Updating documents...');
         await loadDocumentsForViewerRef.current?.(false);
         const updatedMessage =
-          payloadRef.current.message &&
-          "showSplitMerge" in payloadRef.current.message
+          payloadRef.current.message && 'showSplitMerge' in payloadRef.current.message
             ? {
                 ...payloadRef.current.message,
-                showSplitMerge: true,
+                showSplitMerge: true
               }
             : payloadRef.current?.message;
         payloadRef.current = {
           ...payloadRef.current,
-          message: updatedMessage,
+          message: updatedMessage
         };
         // Fire updated load manifest to viewer to show split/merge button if applicable
         if (updatedMessage) sendToViewer(updatedMessage);
@@ -1935,22 +1823,22 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         // Fire transaction data to viewer if applicable
         const updatedTransactionMessage = {
           ...transactionDataPayloadRef.current?.message,
-          readOnly: false,
+          readOnly: false
         } as LoadExtractionDataMessage;
         transactionDataPayloadRef.current = {
           ...transactionDataPayloadRef.current,
-          message: updatedTransactionMessage,
+          message: updatedTransactionMessage
         };
         if (updatedTransactionMessage) sendToViewer(updatedTransactionMessage);
 
         // Fire NER metadata to viewer if applicable
         const updatedNerMetadataMessage = {
           ...nerMetadataPayloadRef.current?.message,
-          readOnlyNer: false,
+          readOnlyNer: false
         } as NerMetadataMessage;
         nerMetadataPayloadRef.current = {
           ...nerMetadataPayloadRef.current,
-          message: updatedNerMetadataMessage,
+          message: updatedNerMetadataMessage
         };
         if (updatedNerMetadataMessage) sendToViewer(updatedNerMetadataMessage);
 
@@ -1972,21 +1860,21 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         setSamInProgress(true);
       } else {
         logErrorRef.current(
-          "Unable to determine status. Please try refreshing again.",
-          "SAM re-classification status could not be determined from status data page.",
-          "warning",
+          'Unable to determine status. Please try refreshing again.',
+          'SAM re-classification status could not be determined from status data page.',
+          'warning'
         );
       }
     } catch (err) {
       logErrorRef.current(
-        "Failed to refresh status. Please try again.",
+        'Failed to refresh status. Please try again.',
         `Failed refreshing SAM re-classification status: ${err}`,
-        "warning",
+        'warning'
       );
     } finally {
       setIsRefreshing(false);
       setIsLoading(false);
-      setLoadingMessage("Loading...");
+      setLoadingMessage('Loading...');
     }
   }, [
     isRefreshing,
@@ -1997,19 +1885,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     trySendNer,
     isSAMOpenField,
     completedWorkStatus,
-    updateSplitMergeWorkStatus,
+    updateSplitMergeWorkStatus
   ]);
 
   const onNerDocRequest = useCallback(
     async (data: any) => {
       try {
-        if (!data.docId || typeof data.docId !== "string") return;
+        if (!data.docId || typeof data.docId !== 'string') return;
         setIsLoading(true);
         nerPayloadRef.current = { ready: false, message: null };
-        setLoadingMessage("Loading NER extraction for requested document...");
-        console.log(
-          `[MFEViewer] NER extraction requested for document: ${data.docId}`,
-        );
+        setLoadingMessage('Loading NER extraction for requested document...');
+        console.log(`[MFEViewer] NER extraction requested for document: ${data.docId}`);
 
         updateTransientDocumentId(data.docId);
 
@@ -2017,66 +1903,46 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           pConnRef.current,
           nerReferenceList?.referenceList,
           pConnRef.current.resolveConfigProps(
-            pConnRef.current.getRawConfigProps()?.nerReferenceList?.parameters,
+            pConnRef.current.getRawConfigProps()?.nerReferenceList?.parameters
           ),
-          "list",
+          'list'
         );
 
-        if (
-          ner &&
-          Array.isArray(ner) &&
-          ner.length > 0 &&
-          ner[0][nerJsonField]
-        ) {
+        if (ner && Array.isArray(ner) && ner.length > 0 && ner[0][nerJsonField]) {
           nerPayloadRef.current = {
             ready: true,
-            message: JSON.parse(
-              ner[0][nerJsonField] as string,
-            ) as NerDocResponseMessage,
+            message: JSON.parse(ner[0][nerJsonField] as string) as NerDocResponseMessage
           };
 
           trySendNer();
         }
       } catch (err) {
-        console.error(
-          "Failed to load NER extraction for requested document:",
-          err,
-        );
+        console.error('Failed to load NER extraction for requested document:', err);
       } finally {
         setIsLoading(false);
-        setLoadingMessage("Loading...");
+        setLoadingMessage('Loading...');
       }
     },
-    [
-      nerReferenceList?.referenceList,
-      trySendNer,
-      nerJsonField,
-      updateTransientDocumentId,
-    ],
+    [nerReferenceList?.referenceList, trySendNer, nerJsonField, updateTransientDocumentId]
   );
 
   const onNerOpened = useCallback(
     (data: Record<string, unknown>) => {
       if (featureFlags.allowExpand) setIsExpanded(true);
       isNEROpenedRef.current = true;
-      console.log("[MFEViewer] NER opened:", data.docId);
+      console.log('[MFEViewer] NER opened:', data.docId);
       if (isNEROpenField) {
         try {
-          pConnRef.current
-            .getActionsApi()
-            .updateFieldValue(isNEROpenField, isNEROpenedRef.current);
+          pConnRef.current.getActionsApi().updateFieldValue(isNEROpenField, isNEROpenedRef.current);
           pConnRef.current
             .getActionsApi()
             .triggerFieldChange(isNEROpenField, isNEROpenedRef.current);
         } catch (err) {
-          console.warn(
-            "Failed to update isNEROpenField on viewer state change:",
-            err,
-          );
+          console.warn('Failed to update isNEROpenField on viewer state change:', err);
         }
       }
     },
-    [featureFlags.allowExpand, isNEROpenField],
+    [featureFlags.allowExpand, isNEROpenField]
   );
 
   const onNerExited = useCallback(
@@ -2085,29 +1951,24 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       isNEROpenedRef.current = false;
       if (isNEROpenField) {
         try {
-          pConnRef.current
-            .getActionsApi()
-            .updateFieldValue(isNEROpenField, isNEROpenedRef.current);
+          pConnRef.current.getActionsApi().updateFieldValue(isNEROpenField, isNEROpenedRef.current);
           pConnRef.current
             .getActionsApi()
             .triggerFieldChange(isNEROpenField, isNEROpenedRef.current);
         } catch (err) {
-          console.warn(
-            "Failed to update isNEROpenField on viewer state change:",
-            err,
-          );
+          console.warn('Failed to update isNEROpenField on viewer state change:', err);
         }
-        console.log("[MFEViewer] NER exited:", data.docId);
+        console.log('[MFEViewer] NER exited:', data.docId);
       }
     },
-    [featureFlags.allowExpand, isNEROpenField],
+    [featureFlags.allowExpand, isNEROpenField]
   );
 
   const onInvalidNer = useCallback((data: Record<string, unknown>) => {
     logErrorRef.current(
-      "Incorrect NER extraction received. Viewer may not display noun extractions correctly.",
+      'Incorrect NER extraction received. Viewer may not display noun extractions correctly.',
       `Invalid document_id - ${data.receivedDocId} received for NER extraction. Expected ${data.expectedDocId}.`,
-      "warning",
+      'warning'
     );
   }, []);
 
@@ -2115,73 +1976,60 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     async (data: Record<string, unknown>) => {
       try {
         setIsLoading(true);
-        setLoadingMessage("Submitting NER extraction...");
+        setLoadingMessage('Submitting NER extraction...');
 
         const res = await fetchWithBackoff(
           pConnRef.current,
           nerSaveReferenceList?.referenceList,
           {
             ...pConnRef.current.resolveConfigProps(
-              pConnRef.current.getRawConfigProps()?.nerSaveReferenceList
-                ?.parameters,
+              pConnRef.current.getRawConfigProps()?.nerSaveReferenceList?.parameters
             ),
-            [uniqueIdParameter || "UniqueID"]: data.uniqueID,
-            [nerDataParameter || "nerData"]: JSON.stringify(data),
+            [uniqueIdParameter || 'UniqueID']: data.uniqueID,
+            [nerDataParameter || 'nerData']: JSON.stringify(data)
           },
-          "list",
+          'list',
           {
-            maxRetries: 0,
-          },
+            maxRetries: 0
+          }
         );
         if (featureFlags.allowExpand) setIsExpanded(false);
 
         if (res && Array.isArray(res) && res.length > 0) {
           sendToViewer({
             type: VALIDATION_MSG,
-            mode: "SUBMIT",
-            status: res[0][saveResultField] as "SUCCESS" | "ERROR",
+            mode: 'SUBMIT',
+            status: res[0][saveResultField] as 'SUCCESS' | 'ERROR',
             message:
-              (res[0][saveMessageField] as string) ||
-              `Failed to submit data. Please try again.`,
+              (res[0][saveMessageField] as string) || `Failed to submit data. Please try again.`
           });
           return;
         }
 
         if (isNERSubmittedField) {
-          pConnRef.current
-            .getActionsApi()
-            .updateFieldValue(isNERSubmittedField, true);
-          pConnRef.current
-            .getActionsApi()
-            .triggerFieldChange(isNERSubmittedField, true);
+          pConnRef.current.getActionsApi().updateFieldValue(isNERSubmittedField, true);
+          pConnRef.current.getActionsApi().triggerFieldChange(isNERSubmittedField, true);
         }
 
-        if (
-          featureFlags.finishAssignmentOnSubmitNER ||
-          data.action === NER_SUBMIT_ACTION_SAVE
-        ) {
+        if (featureFlags.finishAssignmentOnSubmitNER || data.action === NER_SUBMIT_ACTION_SAVE) {
           await pConnRef.current
             .getActionsApi()
             .finishAssignment(pConnRef.current.getContextName());
         } else if (data.action === NER_SUBMIT_ACTION_APPROVE) {
-          await pConnRef.current
-            .getActionsApi()
-            .approveCase(pConnRef.current.getContextName());
+          await pConnRef.current.getActionsApi().approveCase(pConnRef.current.getContextName());
         } else if (data.action === NER_SUBMIT_ACTION_REJECT) {
-          await pConnRef.current
-            .getActionsApi()
-            .rejectCase(pConnRef.current.getContextName());
+          await pConnRef.current.getActionsApi().rejectCase(pConnRef.current.getContextName());
         }
       } catch (err) {
         sendToViewer({
           type: VALIDATION_MSG,
-          mode: "SUBMIT",
-          status: "ERROR",
-          message: `Failed to submit data. Please try again.`,
+          mode: 'SUBMIT',
+          status: 'ERROR',
+          message: `Failed to submit data. Please try again.`
         });
       } finally {
         setIsLoading(false);
-        setLoadingMessage("Loading...");
+        setLoadingMessage('Loading...');
       }
     },
     [
@@ -2193,49 +2041,44 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       sendToViewer,
       saveMessageField,
       saveResultField,
-      uniqueIdParameter,
-    ],
+      uniqueIdParameter
+    ]
   );
 
   const onCapturePreview = useCallback(() => {
-    console.log("[MFEViewer] Capture preview requested");
+    console.log('[MFEViewer] Capture preview requested');
   }, []);
 
   const onOcrRequest = useCallback(
     async (data: Record<string, unknown>) => {
       try {
         setIsLoading(true);
-        setLoadingMessage("Extracting text for OCR request...");
-        console.log("[MFEViewer] OCR request received:", data.docId);
+        setLoadingMessage('Extracting text for OCR request...');
+        console.log('[MFEViewer] OCR request received:', data.docId);
 
-        setWarningMessages((prev) =>
+        setWarningMessages(prev =>
           prev.filter(
-            (msg) =>
+            msg =>
               [
-                "No OCR data returned for requested snippet. Viewer may not display extraction correctly.",
-                "No field selected for On Demand OCR extraction. Please select a field in the NER panel before performing OCR extraction.",
-                "No field selected for On Demand OCR extraction. Please select a field in the NER panel before performing OCR extraction.",
-              ].includes(msg) === false,
-          ),
+                'No OCR data returned for requested snippet. Viewer may not display extraction correctly.',
+                'No field selected for On Demand OCR extraction. Please select a field in the NER panel before performing OCR extraction.',
+                'No field selected for On Demand OCR extraction. Please select a field in the NER panel before performing OCR extraction.'
+              ].includes(msg) === false
+          )
         );
 
         // Convert array buffer to base64 string for OCR on-demand data page
-        const base64Snippet = await arrayBufferToBase64(
-          data.capturedScreenshot as ArrayBuffer,
-        );
+        const base64Snippet = await arrayBufferToBase64(data.capturedScreenshot as ArrayBuffer);
 
         const timeoutInMs =
-          Number.isFinite(ocrOnDemandExtractionTimeoutInMS) &&
-          ocrOnDemandExtractionTimeoutInMS > 0
+          Number.isFinite(ocrOnDemandExtractionTimeoutInMS) && ocrOnDemandExtractionTimeoutInMS > 0
             ? ocrOnDemandExtractionTimeoutInMS
             : 120000;
 
         const withTimeout = <T,>(promise: Promise<T>, ms: number) =>
           new Promise<T>((resolve, reject) => {
             const timeoutId = setTimeout(() => {
-              reject(
-                new Error(`OCR extraction request timed out after ${ms}ms.`),
-              );
+              reject(new Error(`OCR extraction request timed out after ${ms}ms.`));
             }, ms);
 
             promise
@@ -2252,20 +2095,19 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             ocrOnDemandReferenceList?.referenceList,
             {
               ...pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()?.ocrOnDemandReferenceList
-                  ?.parameters,
+                pConnRef.current.getRawConfigProps()?.ocrOnDemandReferenceList?.parameters
               ),
               [ocrOnDemandRefIdParameter]: data.refId,
               [ocrOnDemandDocumentIdParameter]: data.docId,
-              [ocrOnDemandBase64SnippetParameter]: base64Snippet,
+              [ocrOnDemandBase64SnippetParameter]: base64Snippet
             },
-            "list",
+            'list',
             {
-              maxRetries: 0,
+              maxRetries: 0
             },
-            true,
+            true
           ),
-          timeoutInMs,
+          timeoutInMs
         );
 
         if (res && Array.isArray(res) && res.length) {
@@ -2279,24 +2121,24 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             coordinates: data.coordinates as {
               page_number: number;
               box_2d: number[];
-            },
+            }
           });
         } else {
           logErrorRef.current(
-            "No OCR data returned for requested snippet. Viewer may not display extraction correctly.",
+            'No OCR data returned for requested snippet. Viewer may not display extraction correctly.',
             `No OCR data returned for requested snippet with id=${data.docId} in OCR on-demand data page for MFE Viewer.`,
-            "warning",
+            'warning'
           );
         }
       } catch (err) {
         logErrorRef.current(
-          "Failed to process OCR request. Please try again.",
+          'Failed to process OCR request. Please try again.',
           `Failed processing OCR request: ${err}`,
-          "warning",
+          'warning'
         );
       } finally {
         setIsLoading(false);
-        setLoadingMessage("Loading...");
+        setLoadingMessage('Loading...');
       }
     },
     [
@@ -2306,8 +2148,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       ocrOnDemandDocumentIdParameter,
       ocrOnDemandExtractedValueField,
       ocrOnDemandExtractionTimeoutInMS,
-      sendToViewer,
-    ],
+      sendToViewer
+    ]
   );
 
   // Action bar event listener for physical split trigger. This is only relevant when the viewer is configured to wait for a physical split trigger from the action bar.
@@ -2318,7 +2160,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           payload?.type === ACTION_BAR_EVENT_TYPE &&
           payload?.target === ACTION_BAR_EVENT_TARGET
         ) {
-          console.log("[MFEViewer] Action bar event received:", payload);
+          console.log('[MFEViewer] Action bar event received:', payload);
 
           if (
             featureFlags.physicalSplit &&
@@ -2327,7 +2169,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             samQueryDataPage?.fields?.requestField
           ) {
             // Show a modal dialog here on the viewer to indicate that the physical split is being triggered
-            const confirmed = await new Promise<boolean>((resolve) => {
+            const confirmed = await new Promise<boolean>(resolve => {
               if (!physicalSplitModalConfirmationMessage) {
                 resolve(true);
                 return;
@@ -2335,24 +2177,24 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
               const { dismiss } = modalManagerRef.current.create(() => (
                 <Modal
-                  heading="Confirm Physical Split"
+                  heading='Confirm Physical Split'
                   autoWidth
                   center
                   actions={
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
+                        display: 'flex',
+                        justifyContent: 'space-between',
                         flexGrow: 1,
-                        gap: 1,
+                        gap: 1
                       }}
                     >
                       <Button
-                        variant="secondary"
+                        variant='secondary'
                         style={{
                           background: theme.base.colors.white,
                           borderColor: theme.base.palette.interactive,
-                          color: theme.base.palette.interactive,
+                          color: theme.base.palette.interactive
                         }}
                         onClick={() => {
                           dismiss();
@@ -2362,7 +2204,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
                         Cancel
                       </Button>
                       <Button
-                        variant="primary"
+                        variant='primary'
                         onClick={() => {
                           dismiss();
                           resolve(true);
@@ -2381,30 +2223,27 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             if (!confirmed) return;
 
             setIsLoading(true);
-            setLoadingMessage("Triggering physical split...");
+            setLoadingMessage('Triggering physical split...');
             const res = (await fetchWithBackoff(
               pConnRef.current,
               samQueryDataPage?.source,
               pConnRef.current.resolveConfigProps(
-                pConnRef.current.getRawConfigProps()?.samQueryDataPage
-                  ?.parameters,
+                pConnRef.current.getRawConfigProps()?.samQueryDataPage?.parameters
               ),
-              "page",
+              'page',
               {
-                maxRetries: 0,
+                maxRetries: 0
               },
-              true,
+              true
             )) as Record<string, unknown>;
 
             if (!res) {
               throw new Error(
-                "Failed to fetch data from samQueryDataPage. Response is null or undefined.",
+                'Failed to fetch data from samQueryDataPage. Response is null or undefined.'
               );
             }
 
-            const requestString = res[
-              samQueryDataPage?.fields?.requestField
-            ] as string;
+            const requestString = res[samQueryDataPage?.fields?.requestField] as string;
 
             if (requestString) {
               const request = JSON.parse(requestString);
@@ -2415,19 +2254,21 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
                 .finishAssignment(pConnRef.current.getContextName());
               setIsLoading(false);
             }
-            setLoadingMessage("Loading...");
+            setLoadingMessage('Loading...');
           } else {
             setIsLoading(true);
-            setLoadingMessage("Submitting assignment...");
+            setLoadingMessage('Submitting assignment...');
             await pConnRef.current
               .getActionsApi()
               .finishAssignment(pConnRef.current.getContextName());
             setIsLoading(false);
-            setLoadingMessage("Loading...");
+            setLoadingMessage('Loading...');
           }
         }
       } catch (err) {
         console.error(`[MFEViewer] Failed to process action bar event: ${err}`);
+        setIsLoading(false);
+        setLoadingMessage('Loading...');
       }
     };
 
@@ -2436,14 +2277,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       handleEvent,
       subscriptionId,
       false,
-      pConnRef.current.getContextName(),
+      pConnRef.current.getContextName()
     );
 
     return () => {
       PCore.getPubSubUtils().unsubscribe(
         ACTION_BAR_EVENT,
         subscriptionId,
-        pConnRef.current.getContextName(),
+        pConnRef.current.getContextName()
       );
     };
   }, [
@@ -2454,20 +2295,20 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     sendToViewer,
     physicalSplitModalConfirmationMessage,
     theme,
-    featureFlags.physicalSplit,
+    featureFlags.physicalSplit
   ]);
 
   useEffect(() => {
     const handleEvent = async (payload: Record<string, unknown>) => {
       if (featureFlags.Click2Pick) {
-        console.log("[MFEViewer] Element selected: ", payload);
+        console.log('[MFEViewer] Element selected: ', payload);
         selectedTransactionFieldRef.current = payload?.property as string;
       }
 
       if (!featureFlags.highlights) return;
 
       if (
-        highlightSource === "ElementSelector" &&
+        highlightSource === 'ElementSelector' &&
         Array.isArray(payload.box_2d) &&
         payload.box_2d.length === 4 &&
         (payload.page as number) > 0
@@ -2479,8 +2320,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             value: payload.value as string,
             box_2d: payload.box_2d as number[],
             page: payload.page as number,
-            color: highlightColor,
-          },
+            color: highlightColor
+          }
         });
       }
     };
@@ -2491,14 +2332,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       handleEvent,
       subscriptionId,
       false,
-      pConnRef.current.getContextName(),
+      pConnRef.current.getContextName()
     );
 
     return () => {
       PCore.getPubSubUtils().unsubscribe(
         ELEMENT_PROPAGATE,
         subscriptionId,
-        pConnRef.current.getContextName(),
+        pConnRef.current.getContextName()
       );
     };
   }, [
@@ -2508,11 +2349,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     loadHighlights,
     sendToViewer,
     subscriptionId,
-    highlightColor,
+    highlightColor
   ]);
 
   useEffect(() => {
-    if (!featureFlags.highlights || highlightSource !== "DynamicView") return;
+    if (!featureFlags.highlights || highlightSource !== 'DynamicView') return;
 
     const handleEvent = async (payload: Record<string, unknown>) => {
       if (
@@ -2527,8 +2368,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             value: payload.value as string,
             box_2d: payload.box_2d as number[],
             page: payload.page as number,
-            color: highlightColor,
-          },
+            color: highlightColor
+          }
         });
       }
     };
@@ -2538,43 +2379,31 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       handleEvent,
       subscriptionId,
       false,
-      pConnRef.current.getContextName(),
+      pConnRef.current.getContextName()
     );
 
     return () => {
       PCore.getPubSubUtils().unsubscribe(
         DYNAMIC_VIEW_FIELD_HIGHLIGHT,
         subscriptionId,
-        pConnRef.current.getContextName(),
+        pConnRef.current.getContextName()
       );
     };
-  }, [
-    featureFlags.highlights,
-    highlightSource,
-    subscriptionId,
-    highlightColor,
-    sendToViewer,
-  ]);
+  }, [featureFlags.highlights, highlightSource, subscriptionId, highlightColor, sendToViewer]);
 
   const onCancel = useCallback(() => {
-    console.log("[MFEViewer] Cancel clicked");
-    pConnRef.current
-      .getActionsApi()
-      .cancelAssignment(pConnRef.current.getContextName(), false);
+    console.log('[MFEViewer] Cancel clicked');
+    pConnRef.current.getActionsApi().cancelAssignment(pConnRef.current.getContextName());
   }, []);
 
   const onExtractionDataRequest = useCallback(
     async (data: Record<string, unknown>) => {
       try {
-        if (!data.docId || typeof data.docId !== "string") return;
+        if (!data.docId || typeof data.docId !== 'string') return;
         setIsLoading(true);
         nerPayloadRef.current = { ready: false, message: null };
-        setLoadingMessage(
-          "Loading transaction extraction for requested document...",
-        );
-        console.log(
-          `[MFEViewer] Transaction extraction requested for document: ${data.docId}`,
-        );
+        setLoadingMessage('Loading transaction extraction for requested document...');
+        console.log(`[MFEViewer] Transaction extraction requested for document: ${data.docId}`);
 
         updateTransientDocumentId(data.docId);
 
@@ -2582,13 +2411,12 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           pConnRef.current,
           transactionDataReferenceList?.referenceList,
           pConnRef.current.resolveConfigProps(
-            pConnRef.current.getRawConfigProps()?.transactionDataReferenceList
-              ?.parameters,
+            pConnRef.current.getRawConfigProps()?.transactionDataReferenceList?.parameters
           ),
-          "list",
+          'list',
           {
-            maxRetries: 0,
-          },
+            maxRetries: 0
+          }
         );
 
         if (transactionData.length === 0) {
@@ -2599,63 +2427,54 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         transactionDataPayloadRef.current = {
           ready: true,
           message: JSON.parse(
-            transactionData[0][transactionDataJsonField],
-          ) as LoadExtractionDataMessage,
+            transactionData[0][transactionDataJsonField]
+          ) as LoadExtractionDataMessage
         };
         trySendTransactionData();
       } catch (err) {
-        console.error(
-          `[MFEViewer] Failed to process transaction extraction request: ${err}`,
-        );
+        console.error(`[MFEViewer] Failed to process transaction extraction request: ${err}`);
       } finally {
         setIsLoading(false);
-        setLoadingMessage("Loading...");
+        setLoadingMessage('Loading...');
       }
     },
     [
       transactionDataReferenceList,
       transactionDataJsonField,
       trySendTransactionData,
-      updateTransientDocumentId,
-    ],
+      updateTransientDocumentId
+    ]
   );
 
   const onFormSaveSubmit = useCallback(
     async (data: Record<string, unknown>, isSubmit: boolean = false) => {
       try {
         setIsLoading(true);
-        setLoadingMessage(isSubmit ? "Submitting form..." : "Saving form...");
+        setLoadingMessage(isSubmit ? 'Submitting form...' : 'Saving form...');
         console.log(
-          `[MFEViewer] Form ${isSubmit ? "submit" : "save"} requested for document: ${data.docId}`,
+          `[MFEViewer] Form ${isSubmit ? 'submit' : 'save'} requested for document: ${data.docId}`
         );
         await fetchWithBackoff(
           pConnRef.current,
           transactionDataSaveReferenceList?.referenceList,
           {
             ...pConnRef.current.resolveConfigProps(
-              pConnRef.current.getRawConfigProps()
-                ?.transactionDataSaveReferenceList?.parameters,
+              pConnRef.current.getRawConfigProps()?.transactionDataSaveReferenceList?.parameters
             ),
             [uniqueIdParameter]: data.uniqueID,
-            [transactionFieldsParameter]: JSON.stringify(data),
+            [transactionFieldsParameter]: JSON.stringify(data)
           },
-          "list",
+          'list',
           {
-            maxRetries: 0,
-          },
+            maxRetries: 0
+          }
         );
 
         if (!isSubmit && Array.isArray(data.fields) && data.fields.length > 0) {
-          const currentContent =
-            pConnRef.current.getDataObject()?.caseInfo?.content ?? {};
+          const currentContent = pConnRef.current.getDataObject()?.caseInfo?.content ?? {};
 
           const resolvedFields = data.fields.reduce((acc, field) => {
-            if (
-              field &&
-              typeof field === "object" &&
-              field.field_name &&
-              field.field_value
-            ) {
+            if (field && typeof field === 'object' && field.field_name && field.field_value) {
               acc[field.field_name] = field.field_value;
             }
             return acc;
@@ -2667,24 +2486,19 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
                 ...currentContent,
                 BatchDetails: {
                   ...currentContent.BatchDetails,
-                  ...(typeof resolvedFields === "object" &&
-                  resolvedFields !== null
+                  ...(typeof resolvedFields === 'object' && resolvedFields !== null
                     ? resolvedFields
-                    : {}),
-                },
-              },
-            },
+                    : {})
+                }
+              }
+            }
           });
-          await pConnRef.current
-            .getActionsApi()
-            .saveAssignment(pConnRef.current.getContextName());
-          const latestAssignmentEtag = sessionStorage.getItem(
-            LATEST_ASSIGNMENT_ETAG_KEY,
-          );
+          await pConnRef.current.getActionsApi().saveAssignment(pConnRef.current.getContextName());
+          const latestAssignmentEtag = sessionStorage.getItem(LATEST_ASSIGNMENT_ETAG_KEY);
           if (latestAssignmentEtag) {
             PCore.getContainerUtils().updateCaseContextEtag(
               pConnRef.current.getContextName(),
-              latestAssignmentEtag,
+              latestAssignmentEtag
             );
           }
         }
@@ -2695,20 +2509,18 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
             .finishAssignment(pConnRef.current.getContextName());
         }
       } catch (err) {
-        console.error(
-          `[MFEViewer] Failed to process form save/submit request: ${err}`,
-        );
+        console.error(`[MFEViewer] Failed to process form save/submit request: ${err}`);
       } finally {
         setIsLoading(false);
-        setLoadingMessage("Loading...");
+        setLoadingMessage('Loading...');
       }
     },
     [
       transactionDataSaveReferenceList,
       transactionFieldsParameter,
       uniqueIdParameter,
-      featureFlags.finishAssignmentOnSubmitTransactionData,
-    ],
+      featureFlags.finishAssignmentOnSubmitTransactionData
+    ]
   );
 
   useEffect(() => {
@@ -2716,13 +2528,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   }, []);
 
   const onSplitApprovedAck = useCallback(async () => {
-    console.log("[MFEViewer] split approved acknowledged");
-    setLoadingMessage("Submitting assignment...");
-    await pConnRef.current
-      .getActionsApi()
-      .finishAssignment(pConnRef.current.getContextName());
+    console.log('[MFEViewer] split approved acknowledged');
+    setLoadingMessage('Submitting assignment...');
+    await pConnRef.current.getActionsApi().finishAssignment(pConnRef.current.getContextName());
     setIsLoading(false);
-    setLoadingMessage("");
+    setLoadingMessage('');
   }, []);
 
   // Global listener for iframe postMessage events with origin/source guards
@@ -2730,20 +2540,12 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     if (!viewerOrigin) return undefined;
 
     const handleMessage = (event: MessageEvent<ViewerMessage>) => {
-      if (
-        !event.data ||
-        typeof event.data !== "object" ||
-        !("type" in event.data)
-      )
-        return;
+      if (!event.data || typeof event.data !== 'object' || !('type' in event.data)) return;
 
-      const isDiffOriginType = DIFF_ORIGIN_EVENT_TYPES.includes(
-        event.data.type,
-      );
+      const isDiffOriginType = DIFF_ORIGIN_EVENT_TYPES.includes(event.data.type);
       if (
         !isDiffOriginType &&
-        (event.origin !== viewerOrigin ||
-          event.source !== iframeRef.current?.contentWindow)
+        (event.origin !== viewerOrigin || event.source !== iframeRef.current?.contentWindow)
       )
         return;
 
@@ -2816,12 +2618,12 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           onSplitApprovedAck();
           break;
         default:
-          console.warn("Unknown viewer message:", messageType);
+          console.warn('Unknown viewer message:', messageType);
       }
     };
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, [
     onViewerReady,
     onDocLoaded,
@@ -2844,24 +2646,22 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     onExtractionDataRequest,
     onFormSaveSubmit,
     onSplitApprovedAck,
-    viewerOrigin,
+    viewerOrigin
   ]);
 
   const [label, showLabel] = useMemo(() => {
     return [
-      (inheritedProps.find(
-        (prop: { prop: string; value: unknown }) => prop.prop === "label",
-      )?.value as string) ?? "Document Viewer",
-      (inheritedProps.find(
-        (prop: { prop: string; value: unknown }) => prop.prop === "showLabel",
-      )?.value as boolean) ?? true,
+      (inheritedProps.find((prop: { prop: string; value: unknown }) => prop.prop === 'label')
+        ?.value as string) ?? 'Document Viewer',
+      (inheritedProps.find((prop: { prop: string; value: unknown }) => prop.prop === 'showLabel')
+        ?.value as boolean) ?? true
     ];
   }, [inheritedProps]);
 
   return (
     <StyledCitiExtensionsMfeViewerWrapper ref={wrapperRef}>
       {showLabel && (
-        <Text style={{ marginBottom: "0.5rem" }} variant="h3">
+        <Text style={{ marginBottom: '0.5rem' }} variant='h3'>
           {label}
         </Text>
       )}
@@ -2869,9 +2669,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       {/* Show warning banner in case of non-blocking issues */}
       {!errorMessage && warningMessages.length > 0 && (
         <Banner
-          variant="warning"
+          variant='warning'
           messages={warningMessages}
-          style={{ marginBottom: "1rem" }}
+          style={{ marginBottom: '1rem' }}
           onDismiss={() => setWarningMessages([])}
         />
       )}
@@ -2882,17 +2682,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         hasInitialCheckCompleted &&
         inProgressBannerText.length > 0 && (
           <Banner
-            variant="info"
+            variant='info'
             messages={[
               {
                 label: inProgressBannerText,
                 action: {
-                  text: "Refresh",
-                  onClick: handleRefresh,
-                },
-              },
+                  text: 'Refresh',
+                  onClick: handleRefresh
+                }
+              }
             ]}
-            style={{ marginBottom: "1rem" }}
+            style={{ marginBottom: '1rem' }}
           />
         )}
 
@@ -2901,24 +2701,20 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
       {/* Embedded external MFE viewer */}
       <iframe
-        id="mfe-doc-viewer"
+        id='mfe-doc-viewer'
         src={mfeURL}
         title={label}
         style={{
-          width: "100%",
-          height: "800px",
-          border: "none",
-          display: errorMessage ? "none" : "block",
+          width: '100%',
+          height: '800px',
+          border: 'none',
+          display: errorMessage ? 'none' : 'block'
         }}
         ref={iframeRef}
       />
 
       {/* Inline loader for all in-flight operations */}
-      <Progress
-        placement="local"
-        visible={isLoading}
-        message={loadingMessage}
-      />
+      <Progress placement='local' visible={isLoading} message={loadingMessage} />
     </StyledCitiExtensionsMfeViewerWrapper>
   );
 }

@@ -135,6 +135,8 @@ export interface CitiExtensionsMfeViewerProps extends PConnFieldProps {
   isCustomTab: boolean;
   loadFromTemplate: boolean;
   currentQueue: string;
+  maintenanceApproach: string;
+  maintenanceApproachNERFlag: boolean;
   logDataPage: string;
   logParameter: string;
 }
@@ -203,6 +205,10 @@ export interface DocumentMessage {
   isCustomTab?: boolean;
   loadFromTemplate?: boolean;
   currentQueue?: string;
+  maintenanceApproach?: {
+    approach?: string;
+    nerFlag?: boolean;
+  };
 }
 
 export interface SingleDocumentMessage extends DocumentMessage {
