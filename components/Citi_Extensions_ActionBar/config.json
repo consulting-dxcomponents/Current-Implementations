@@ -1,0 +1,61 @@
+{
+  "name": "Citi_Extensions_ActionBar",
+  "label": "Action Bar",
+  "description": "Footer action bar with a Cancel button on the left and Save / Save & Submit buttons on the right. Cancel cancels the current assignment; Save saves it; Save & Submit finishes the assignment and publishes a configurable event.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_ActionBar",
+  "type": "Widget",
+  "subtype": "CASE",
+  "icon": "DefaultForm.svg",
+  "properties": [
+    {
+      "label": "Save Configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "enableSave",
+          "name": "enableSave",
+          "label": "Enable Save (Toggle)",
+          "format": "PROPERTY",
+          "required": false,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "label": "Target Component Configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "target",
+          "name": "target",
+          "label": "Target Component Name",
+          "format": "PROPERTY",
+          "required": false,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "name": "cancelButtonLabel",
+      "label": "Cancel button label",
+      "format": "TEXT",
+      "required": false
+    },
+    {
+      "name": "saveButtonLabel",
+      "label": "Save button label",
+      "format": "TEXT",
+      "required": false
+    },
+    {
+      "name": "saveAndSubmitButtonLabel",
+      "label": "Save & Submit button label",
+      "format": "TEXT",
+      "required": false
+    }
+  ]
+}
