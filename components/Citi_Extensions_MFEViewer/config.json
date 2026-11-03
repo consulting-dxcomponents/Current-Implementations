@@ -729,6 +729,28 @@
           "required": true
         }
       ]
+    },
+    {
+      "label": "Batch configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "batchFileName",
+          "name": "batchFileName",
+          "label": "Batch File Name",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "batchDownloadRequired",
+          "name": "batchDownloadRequired",
+          "label": "Batch Download Required (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        }
+      ]
     }
   ]
 }

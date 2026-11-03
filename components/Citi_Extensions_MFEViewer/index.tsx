@@ -188,7 +188,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     saveResultField,
     saveMessageField,
     logDataPage,
-    logParameter
+    logParameter,
+    batchFileName,
+    batchDownloadRequired
   } = props;
 
   const theme = useTheme();
@@ -252,7 +254,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       loadFromTemplate,
       currentQueue,
       maintenanceApproach,
-      maintenanceApproachNERFlag
+      maintenanceApproachNERFlag,
+      batchFileName,
+      batchDownloadRequired
     }),
     [
       allowExpand,
@@ -282,7 +286,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       samType,
       inProgressWorkStatus,
       completedWorkStatus,
-      updateDocumentFields
+      updateDocumentFields,
+      batchFileName,
+      batchDownloadRequired
     ]
   );
 
@@ -823,7 +829,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         maintenanceApproach: {
           approach: featureFlags.maintenanceApproach,
           nerFlag: featureFlags.maintenanceApproachNERFlag
-        }
+        },
+        batchFileName: featureFlags.batchFileName,
+        batchDownloadRequired: featureFlags.batchDownloadRequired
       };
 
       if (
@@ -944,7 +952,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         maintenanceApproach: {
           approach: featureFlags.maintenanceApproach,
           nerFlag: featureFlags.maintenanceApproachNERFlag
-        }
+        },
+        batchFileName: featureFlags.batchFileName,
+        batchDownloadRequired: featureFlags.batchDownloadRequired
       };
 
       return message;

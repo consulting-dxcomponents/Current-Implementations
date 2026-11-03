@@ -139,6 +139,8 @@ export interface CitiExtensionsMfeViewerProps extends PConnFieldProps {
   maintenanceApproachNERFlag: boolean;
   logDataPage: string;
   logParameter: string;
+  batchFileName: string;
+  batchDownloadRequired: boolean;
 }
 
 // Union of all valid message type strings e.g. "READY" | "DOC_LOADED" | ...
@@ -209,6 +211,8 @@ export interface DocumentMessage {
     approach?: string;
     nerFlag?: boolean;
   };
+  batchFileName?: string;
+  batchDownloadRequired?: boolean;
 }
 
 export interface SingleDocumentMessage extends DocumentMessage {
