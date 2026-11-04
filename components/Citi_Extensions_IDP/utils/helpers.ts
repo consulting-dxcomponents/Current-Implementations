@@ -82,6 +82,26 @@ function serializeRepeatableInitialRows(
   );
 }
 
+/**
+ * True when a value carries real content. Serialized repeatable values such as
+ * `[]`, `[""]` or `[{"Tax Id":""}]` are treated as empty (all leaves blank).
+ */
+function hasContent(val: unknown): boolean {
+  if (val == null) return false;
+  if (Array.isArray(val)) return val.some(hasContent);
+  if (typeof val === 'object') return Object.values(val as Record<string, unknown>).some(hasContent);
+  const str = String(val).trim();
+  if (str === '') return false;
+  if (str.startsWith('[') || str.startsWith('{')) {
+    try {
+      return hasContent(JSON.parse(str));
+    } catch {
+      /* not JSON — plain non-empty string */
+    }
+  }
+  return true;
+}
+
 /** Strips whitespace from phone/telephone values before comparison to avoid format-mismatch misses. */
 function normaliseForCompare(fieldLabel: string, value: string): string {
   return /telephone|mobile|phone/i.test(fieldLabel) ? value.replace(/[\s\-().]/g, '') : value;
@@ -115,27 +135,51 @@ function computeModifiedNonUser(netPending: FieldChange[], ctx: ModifiedCtx): nu
   return modifiedKeys.size;
 }
 
-function computeModifiedUser(netPending: FieldChange[], ctx: ModifiedUserCtx): number {
-  const delta = netPending
-    .filter(c => ctx.isIdpValueNonEmpty(ctx.idpValueFor(c)))
-    .reduce((acc, c) => {
+/**
+ * EventType=User: starts from the persisted audit-log counts and applies the net
+ * effect of the pending (unsaved) session edits on top.
+ *
+ * Per field, the original IDP value is the oldest audit entry's previousValue (or,
+ * for a field never saved before, the pending previousValue — which still equals the
+ * extracted value). The field's state is compared before (saved value) and after
+ * (current value) this session:
+ *  - added    → original empty and value non-empty
+ *  - modified → original non-empty and value differs from original
+ * The delta (after − before) is added to the persisted counts, so already-counted
+ * fields are never double counted and reverts decrement correctly.
+ */
+function computeUserCounts(
+  netPending: FieldChange[],
+  ctx: ModifiedUserCtx & { auditLogNewlyAddedFields?: number }
+): { added: number; modified: number } {
+  let addedDelta = 0;
+  let modifiedDelta = 0;
+  netPending
+    .filter(c => c.entryType !== 'workStatus' && c.entryType !== 'documentType')
+    .forEach(c => {
       const key = ctx.changeKey(c);
-      const norm = (v: string) => normaliseForCompare(c.fieldLabel, v);
-      const idpValue = norm(ctx.idpValueFor(c));
-      const currentValue = norm((c.newValue ?? '').trim());
-      const previousValue = norm((c.previousValue ?? '').trim());
-      const inAuditLog = ctx.auditLogKeys.has(key);
-      // For saved fields, the true original value is the oldest audit entry's previousValue —
-      // idpValue (from extractedData) reflects the saved payload for EventType=User, not the original extraction.
-      const originalValue = inAuditLog
-        ? norm((ctx.oldestAuditByKey.get(key)?.previousValue ?? '').trim())
-        : idpValue;
-      if (!ctx.isIdpValueNonEmpty(originalValue)) return acc;
-      if (previousValue === originalValue && currentValue !== originalValue) return acc + 1;
-      if (previousValue !== originalValue && currentValue === originalValue) return acc - 1;
-      return acc;
-    }, 0);
-  return Math.max(0, (ctx.auditLogFieldsModified ?? 0) + delta);
+      const norm = (v: string | undefined) => normaliseForCompare(c.fieldLabel, (v ?? '').trim());
+      const savedValue = norm(c.previousValue);
+      const currentValue = norm(c.newValue);
+      const original = ctx.auditLogKeys.has(key)
+        ? norm(ctx.oldestAuditByKey.get(key)?.previousValue)
+        : savedValue;
+      const status = (value: string) => {
+        const originalEmpty = !ctx.isIdpValueNonEmpty(original);
+        return {
+          added: originalEmpty && ctx.isIdpValueNonEmpty(value) ? 1 : 0,
+          modified: !originalEmpty && value !== original ? 1 : 0
+        };
+      };
+      const before = status(savedValue);
+      const after = status(currentValue);
+      addedDelta += after.added - before.added;
+      modifiedDelta += after.modified - before.modified;
+    });
+  return {
+    added: Math.max(0, (ctx.auditLogNewlyAddedFields ?? 0) + addedDelta),
+    modified: Math.max(0, (ctx.auditLogFieldsModified ?? 0) + modifiedDelta)
+  };
 }
 
 type AddedCtx = {
@@ -146,17 +190,13 @@ type AddedCtx = {
   auditLogNewlyAddedFields?: number;
 };
 
-function computeFieldsAdded(netPending: FieldChange[], isUser: boolean, ctx: AddedCtx): number {
-  const hasNewAdditionsPending = netPending.some(
-    c => (c.previousValue ?? '').trim() === '' && (c.newValue ?? '').trim() !== ''
-  );
-  if (isUser && !hasNewAdditionsPending) return ctx.auditLogNewlyAddedFields ?? 0;
+function computeFieldsAdded(netPending: FieldChange[], ctx: AddedCtx): number {
   const newlyAdded = new Set(
     netPending
       .filter(
         c =>
-          (c.previousValue ?? '').trim() === '' &&
-          (c.newValue ?? '').trim() !== '' &&
+          !hasContent(c.previousValue) &&
+          hasContent(c.newValue) &&
           !ctx.extractedNonEmptyKeys.has(ctx.normalise(c.fieldLabel)) &&
           !ctx.auditLogKeys.has(ctx.changeKey(c))
       )
@@ -183,9 +223,12 @@ function computeModifiedFromExtracted(ctx: ModifiedFromExtractedCtx): number {
     netAllMap.set(key, existing ? { ...c, previousValue: existing.previousValue } : c);
   }
   return [...netAllMap.values()].filter(c => {
-    const idpValue = normaliseForCompare(c.fieldLabel, ctx.idpValueFor(c));
-    if (!ctx.isIdpValueNonEmpty(idpValue)) return false;
-    return normaliseForCompare(c.fieldLabel, (c.newValue ?? '').trim()) !== idpValue;
+    if (c.entryType === 'workStatus' || c.entryType === 'documentType') return false;
+    // The earliest logged previousValue is the original IDP value. If it was empty the
+    // change is an addition (counted separately), never a modification.
+    const original = normaliseForCompare(c.fieldLabel, (c.previousValue ?? '').trim());
+    if (!ctx.isIdpValueNonEmpty(original)) return false;
+    return normaliseForCompare(c.fieldLabel, (c.newValue ?? '').trim()) !== original;
   }).length;
 }
 
@@ -234,7 +277,7 @@ export function computeFieldCounts(
   const extractedNonEmptyKeys = new Set(
     extractedData
       ? Object.entries(extractedData)
-          .filter(([, v]) => v != null && String(v).trim() !== '')
+          .filter(([, v]) => hasContent(v))
           .map(([k]) => normalise(k))
       : []
   );
@@ -248,7 +291,7 @@ export function computeFieldCounts(
     netMap.set(key, first ? { ...c, previousValue: first.previousValue } : c);
   }
   const netPending = [...netMap.values()];
-  const FieldsAdded = computeFieldsAdded(netPending, isUser, {
+  let FieldsAdded = computeFieldsAdded(netPending, {
     changeKey,
     normalise,
     auditLogKeys,
@@ -282,18 +325,8 @@ export function computeFieldCounts(
     if (!oldestAuditByKey.has(key)) oldestAuditByKey.set(key, c);
   }
 
-  // True when a serialized IDP value is non-empty (not blank string, empty object, or empty array).
-  const isIdpValueNonEmpty = (val: string): boolean => {
-    if (!val || val.trim() === '') return false;
-    try {
-      const parsed = JSON.parse(val);
-      if (Array.isArray(parsed)) return parsed.length > 0;
-      if (typeof parsed === 'object' && parsed !== null) return Object.keys(parsed).length > 0;
-    } catch {
-      /* plain string — non-empty */
-    }
-    return true;
-  };
+  // True when a serialized IDP value is non-empty (ignores blank strings and all-blank arrays/objects).
+  const isIdpValueNonEmpty = (val: string): boolean => hasContent(val);
 
   // Resolves the IDP-extracted value string for a pending change (scalar or repeatable).
   const idpValueFor = (c: FieldChange): string =>
@@ -304,17 +337,19 @@ export function computeFieldCounts(
   let FieldsModified: number;
 
   if (isUser) {
-    // EventType=User: start from the persisted audit-log count, then apply pending-session delta.
-    // (extractedData here is the user-saved payload, not the original IDP extraction, so fresh
-    // comparison would always show 0. Baseline + delta is the only correct path for User.)
-    FieldsModified = computeModifiedUser(netPending, {
+    // EventType=User: persisted audit-log counts + net effect of the pending session edits.
+    // (extractedData here is the user-saved payload, not the original IDP extraction.)
+    const userCounts = computeUserCounts(netPending, {
       changeKey,
       idpValueFor,
       isIdpValueNonEmpty,
       auditLogKeys,
       oldestAuditByKey,
-      auditLogFieldsModified
+      auditLogFieldsModified,
+      auditLogNewlyAddedFields
     });
+    FieldsAdded = userCounts.added;
+    FieldsModified = userCounts.modified;
   } else if (extractedData) {
     // EventType≠User: compute fresh from combined (audit log + pending) vs original IDP values.
     FieldsModified = computeModifiedFromExtracted({
@@ -503,14 +538,24 @@ export function parseAuditCounts(page: Record<string, unknown>): AuditCounts | n
     return Number.isFinite(n) ? n : 0;
   };
 
-  // A real prior save always writes a Version string (e.g. 'V1').
-  // If Version is absent the page is a Pega default with all counts at 0 — treat as no prior save.
-  if (typeof page['Version'] !== 'string' || !page['Version']) return null;
+  if (!page || typeof page !== 'object') return null;
+  // Case-insensitive lookup so minor property-name differences on the data page don't zero the counts.
+  const lowerKeyMap = new Map(Object.keys(page).map(k => [k.toLowerCase(), k]));
+  const read = (name: string): unknown => {
+    const actual = lowerKeyMap.get(name.toLowerCase());
+    return actual ? page[actual] : undefined;
+  };
+  const countKeys = ['TotalFieldsInSchema', 'FieldsFromIdp', 'FieldsAdded', 'FieldsModified'];
+  const version = read('Version');
+  const hasVersion = version != null && String(version).trim() !== '';
+  const hasCounts = countKeys.some(k => read(k) != null && String(read(k)).trim() !== '');
+  // No prior save (Pega default page) → null so callers fall back to fresh computation.
+  if (!hasVersion && !hasCounts) return null;
   return {
-    TotalFieldsInSchema: toNum(page['TotalFieldsInSchema']),
-    FieldsFromIdp: toNum(page['FieldsFromIdp']),
-    FieldsAdded: toNum(page['FieldsAdded']),
-    FieldsModified: toNum(page['FieldsModified'])
+    TotalFieldsInSchema: toNum(read('TotalFieldsInSchema')),
+    FieldsFromIdp: toNum(read('FieldsFromIdp')),
+    FieldsAdded: toNum(read('FieldsAdded')),
+    FieldsModified: toNum(read('FieldsModified'))
   };
 }
 
