@@ -3,7 +3,7 @@ import { Button, withConfiguration } from '@pega/cosmos-react-core';
 import type { PConnProps } from './PConnProps';
 import './create-nonce';
 
-import StyledCitiExtensionsActionBarWrapper from './styles';
+import StyledCitiExtensionsActionBarWrapper, { HideOOTBActionButtons } from './styles';
 import { ACTION_BAR_EVENT } from '../Citi_Extensions_IDP/utils/constants';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -81,6 +81,7 @@ function CitiExtensionsActionBar(props: CitiExtensionsActionBarProps) {
 
   return (
     <StyledCitiExtensionsActionBarWrapper>
+      <HideOOTBActionButtons />
       <div className='action-bar-left'>
         <Button variant='secondary' onClick={handleCancel}>
           {cancelButtonLabel || 'Cancel'}
@@ -92,7 +93,11 @@ function CitiExtensionsActionBar(props: CitiExtensionsActionBarProps) {
             {saveButtonLabel || 'Save'}
           </Button>
         )}
-        <Button variant='primary' disabled={!enableSubmit} onClick={() => handleSaveandSubmit(true)}>
+        <Button
+          variant='primary'
+          disabled={!enableSubmit}
+          onClick={() => handleSaveandSubmit(true)}
+        >
           {saveAndSubmitButtonLabel || 'Save & Submit'}
         </Button>
       </div>
