@@ -1,0 +1,84 @@
+{
+  "name": "Citi_Extensions_IDP",
+  "label": "IDP",
+  "description": "Intelligent Document Processing review template. Displays a source document on the left and a DOM-driven review panel on the right. Footer provides Submit for Authorization and Close Case actions only.",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_IDP",
+  "type": "Template",
+  "subtype": "FORM",
+  "icon": "DefaultForm.svg",
+  "properties": [
+    {
+      "name": "idpDataPage",
+      "label": "Data page for IDP response",
+      "format": "DATASOURCE",
+      "pageType": "page",
+      "advancedMode": true,
+      "includeAnnotations": false,
+      "properties": [
+        {
+          "name": "jsonField",
+          "label": "Field for JSON Response"
+        },
+        {
+          "name": "confidenceScoreField",
+          "label": "Field for Confidence Score (Batch API)"
+        },
+        {
+          "name": "boundingBoxField",
+          "label": "Field for Bounding Box (Batch API)"
+        }
+      ],
+      "required": true
+    },
+    {
+      "label": "Confidence Score Configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "loadConfidenceScore",
+          "name": "loadConfidenceScore",
+          "label": "Load Confidence Score (Toggle)",
+          "format": "PROPERTY",
+          "required": false,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "label": "Read-Only Mode Configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "readOnlyMode",
+          "name": "readOnlyMode",
+          "label": "Enable Read-Only View (disables field editing)",
+          "format": "PROPERTY",
+          "required": false,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
+      "name": "auditLogDataPage",
+      "label": "Audit Log savable data page name",
+      "format": "TEXT",
+      "required": true
+    },
+    {
+      "name": "idpSavableDataPage",
+      "label": "IDP Response savable data page name",
+      "format": "TEXT",
+      "required": true
+    },
+    {
+      "name": "fieldHistoryDataPage",
+      "label": "Field history data page name (defaults to D_pyFieldHistory)",
+      "format": "TEXT",
+      "required": false
+    }
+  ]
+}

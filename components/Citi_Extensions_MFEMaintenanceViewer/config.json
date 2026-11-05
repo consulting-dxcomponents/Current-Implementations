@@ -1,0 +1,113 @@
+{
+  "name": "Citi_Extensions_MFEMaintenanceViewer",
+  "label": "MFEMaintenanceViewer",
+  "description": "MFEMaintenanceViewer",
+  "organization": "Citi",
+  "version": "1.0.0",
+  "library": "Extensions",
+  "allowedApplications": [],
+  "componentKey": "Citi_Extensions_MFEMaintenanceViewer",
+  "type": "Template",
+  "subtype": "DETAILS",
+  "icon": "Iframe.svg",
+  "properties": [
+    {
+      "key": "mfeURL",
+      "name": "mfeURL",
+      "label": "MFE URL",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "key": "mfeTimeout",
+      "name": "mfeTimeout",
+      "label": "MFE Timeout (ms)",
+      "format": "PROPERTY",
+      "required": true,
+      "match": "propertyRef"
+    },
+    {
+      "label": "Logging configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "logDataPage",
+          "label": "Data page",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "logParameter",
+          "label": "Parameter to log",
+          "format": "TEXT",
+          "required": true
+        }
+      ]
+    },
+    {
+      "label": "MFE Maintenance configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "name": "mfeMaintenanceReferenceList",
+          "label": "MFE Maintenance Reference List",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "format": "TEXT",
+          "label": "Mfe Maintenance JSON Data Field",
+          "name": "mfeMaintenanceJsonDataField",
+          "required": true
+        },
+        {
+          "name": "mfeMaintenanceDataSaveReferenceList",
+          "label": "Data page to save/submit MFE Maintenance data list",
+          "format": "DATAPAGE",
+          "required": true
+        },
+        {
+          "name": "mfeMaintenanceFieldsParameter",
+          "label": "Parameter to pass MFE Maintenance extraction data",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "caseIdParameter",
+          "label": "Parameter to pass unique Id",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "tabParameter",
+          "label": "Parameter to pass tab identifier",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "name": "statusParameter",
+          "label": "Parameter to pass status identifier",
+          "format": "TEXT",
+          "required": true
+        },
+        {
+          "key": "finishAssignmentOnMfeMaintenanceSubmit",
+          "name": "finishAssignmentOnMfeMaintenanceSubmit",
+          "label": "Finish Assignment on MFE Maintenance Submit (Toggle)",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        },
+        {
+          "key": "callSaveMFEMaintenanceFieldReferenceList",
+          "name": "callSaveMFEMaintenanceFieldReferenceList",
+          "label": "Call Save MFE Maintenance Field Reference List",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
+        }
+      ]
+    }
+  ]
+}
