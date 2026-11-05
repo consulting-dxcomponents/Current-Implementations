@@ -19,6 +19,8 @@ interface CitiExtensionsActionBarProps extends PConnProps {
   saveButtonLabel?: string;
   /** Label for the Save & Submit button. */
   saveAndSubmitButtonLabel?: string;
+  /** Enables the Save & Submit button when true (or "true"). */
+  canSubmit?: boolean | string;
 }
 
 /** Action performed by a button in the action bar. */
@@ -48,12 +50,14 @@ function CitiExtensionsActionBar(props: CitiExtensionsActionBarProps) {
     target,
     cancelButtonLabel,
     saveButtonLabel,
-    saveAndSubmitButtonLabel
+    saveAndSubmitButtonLabel,
+    canSubmit
   } = props;
   const pConn = getPConnect();
 
   /** Show the Save button only when explicitly enabled. */
   const showSave = enableSave === true || enableSave === 'true';
+  const enableSubmit = canSubmit === true || canSubmit === 'true';
 
   const publishEvent = (action: ActionPayload) => {
     PCore.getPubSubUtils().publish(ACTION_BAR_EVENT, action);
@@ -64,8 +68,8 @@ function CitiExtensionsActionBar(props: CitiExtensionsActionBarProps) {
   };
 
   /**
-  * Saves directly for non-IDP targets, then publishes the action event. Dynamic views
-  * own the save flow so they can validate before persisting the assignment.
+   * Saves directly for non-IDP targets, then publishes the action event. Dynamic views
+   * own the save flow so they can validate before persisting the assignment.
    */
   const handleSaveandSubmit = (finish: boolean) => {
     if (!finish && target !== 'Dynamic view') {
@@ -88,7 +92,7 @@ function CitiExtensionsActionBar(props: CitiExtensionsActionBarProps) {
             {saveButtonLabel || 'Save'}
           </Button>
         )}
-        <Button variant='primary' onClick={() => handleSaveandSubmit(true)}>
+        <Button variant='primary' disabled={!enableSubmit} onClick={() => handleSaveandSubmit(true)}>
           {saveAndSubmitButtonLabel || 'Save & Submit'}
         </Button>
       </div>

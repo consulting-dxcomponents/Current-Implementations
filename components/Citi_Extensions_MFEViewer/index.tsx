@@ -17,6 +17,7 @@ import {
   getFileArrayBuffer,
   fetchWithBackoff,
   splitStringToIntArray,
+  getStatusMatcher,
   getPropertyParameterArray,
   arrayBufferToBase64,
   LATEST_ASSIGNMENT_ETAG_KEY,
@@ -41,7 +42,8 @@ import type {
   HighlightMessage,
   LoadExtractionDataMessage,
   ViewerTransactionDataPayload,
-  ValidationMsgMessage
+  ValidationMsgMessage,
+  NerRetryDataMessage
 } from './mfeTypes';
 import './create-nonce';
 
@@ -70,6 +72,7 @@ const {
   NER_SUBMIT_ACTION_SAVE,
   NER_SUBMIT_ACTION_APPROVE,
   NER_SUBMIT_ACTION_REJECT,
+  NER_RETRIGGER_CLICKED,
   CAPTURE_PREVIEW,
   OCR_REQUEST,
   OCR_RESPONSE,
@@ -170,7 +173,12 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     transactionDataReferenceList,
     transactionDataJsonField,
     nerSaveReferenceList,
+    nerRetriggerReferenceList,
     nerDataParameter,
+    rerunNer,
+    caseErrorMessage,
+    nerQueryDataPage,
+    nerInProgressBannerText,
     ocrOnDemandReferenceList,
     ocrOnDemandBase64SnippetParameter,
     ocrOnDemandRefIdParameter,
@@ -205,21 +213,35 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
   const [samInProgress, setSamInProgress] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isNerRefreshing, setIsNerRefreshing] = useState(false);
+  const [nerInProgress, setNerInProgress] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [warningMessages, setWarningMessages] = useState<Array<string>>([]);
   const [hasInitialCheckCompleted, setHasInitialCheckCompleted] = useState(false);
+  const [hasInitialNerCheckCompleted, setHasNerInitialCheckCompleted] = useState(false);
   const samInProgressRef = useRef(samInProgress);
+  const nerInProgressRef = useRef(nerInProgress);
   const hasInitialCheckCompletedRef = useRef(hasInitialCheckCompleted);
+  const hasInitialNerCheckCompletedRef = useRef(hasInitialNerCheckCompleted);
   const samInitCheckKeyRef = useRef<string | null>(null);
+  const nerInitCheckKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     samInProgressRef.current = samInProgress;
   }, [samInProgress]);
 
   useEffect(() => {
+    nerInProgressRef.current = nerInProgress;
+  }, [nerInProgress]);
+
+  useEffect(() => {
     hasInitialCheckCompletedRef.current = hasInitialCheckCompleted;
   }, [hasInitialCheckCompleted]);
+
+  useEffect(() => {
+    hasInitialNerCheckCompletedRef.current = hasInitialNerCheckCompleted;
+  }, [hasInitialNerCheckCompleted]);
 
   // Feature flags for optional fields and capabilities
   const featureFlags = useMemo(
@@ -243,6 +265,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       allowPageMovement: loadSplitAndMerge ? allowPageMovement : false,
       showNer: loadNER,
       openNer: loadNER ? openNER : false,
+      rerunNer,
+      caseErrorMessage,
       finishAssignmentOnSubmitNER: loadNER ? finishAssignmentOnSubmitNER : false,
       finishAssignmentOnSubmitTransactionData: isCustomTab
         ? finishAssignmentOnSubmitTransactionData
@@ -272,6 +296,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       allowPageShuffling,
       allowPageMovement,
       loadNER,
+      rerunNer,
+      caseErrorMessage,
       openNER,
       readOnlyNER,
       allowAcknowledgementNER,
@@ -311,6 +337,13 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const transactionDataPayloadRef = useRef<ViewerTransactionDataPayload>({
     ready: false,
     message: null
+  });
+  const nerRetryDataPayloadRef = useRef<NerRetryDataMessage>({
+    errorMessage: '',
+    nerRetryFlag: false,
+    nerRetryTimes: 0,
+    nerRetryStatus: '',
+    durationInSec: 0
   });
   const isNEROpenedRef = useRef<boolean>(false);
   const isSplitMergeOpenedRef = useRef<boolean>(false);
@@ -483,19 +516,6 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       return null;
     }
 
-    const getStatusMatcher = (pipeValues?: string): RegExp | null => {
-      if (!pipeValues || typeof pipeValues !== 'string') return null;
-
-      const tokens = pipeValues
-        .split('|')
-        .map(item => item.trim())
-        .filter(Boolean)
-        .map(item => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-
-      if (tokens.length === 0) return null;
-      return new RegExp(`\\b(?:${tokens.join('|')})\\b`, 'i');
-    };
-
     const completedMatcher = getStatusMatcher(completedStatusRegex);
     const inProgressMatcher = getStatusMatcher(inProgressStatusRegex);
 
@@ -525,6 +545,50 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       return null;
     }
   }, [samQueryDataPage, completedStatusRegex, inProgressStatusRegex]);
+
+  const isNERCorrectionCompleted = useCallback(async (): Promise<boolean | null> => {
+    if (!nerQueryDataPage?.source || !nerQueryDataPage?.fields?.statusField) {
+      return null;
+    }
+
+    const completedMatcher = getStatusMatcher(completedStatusRegex);
+    const inProgressMatcher = getStatusMatcher(inProgressStatusRegex);
+
+    try {
+      const res = (await fetchWithBackoff(
+        pConnRef.current,
+        nerQueryDataPage.source,
+        pConnRef.current.resolveConfigProps(
+          pConnRef.current.getRawConfigProps()?.nerQueryDataPage?.parameters
+        ),
+        'page',
+        {
+          maxRetries: 0
+        },
+        true
+      )) as Record<string, unknown>;
+      const rawStatus = res?.[nerQueryDataPage.fields.statusField];
+      const rawResponse = res?.[nerQueryDataPage.fields.responseField];
+      const status = typeof rawStatus === 'string' ? rawStatus.trim() : '';
+      const response =
+        rawResponse && typeof rawResponse === 'string' ? JSON.parse(rawResponse) : '';
+      if (res && response) {
+        nerRetryDataPayloadRef.current = {
+          ...response,
+          nerRetryStatus: status ?? ''
+        };
+      }
+
+      if (!status) return null;
+
+      if (completedMatcher?.test(status)) return true;
+      if (inProgressMatcher?.test(status)) return false;
+
+      return null;
+    } catch {
+      return null;
+    }
+  }, [nerQueryDataPage, completedStatusRegex, inProgressStatusRegex]);
 
   const updateSplitMergeWorkStatus = useCallback(
     async (status: string) => {
@@ -615,6 +679,64 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     type
   ]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const currentInitKey = `${mfeURL}|${type}|${featureFlags.rerunNer}`;
+
+    if (!featureFlags.rerunNer) {
+      nerInitCheckKeyRef.current = currentInitKey;
+      setNerInProgress(false);
+      setHasInitialCheckCompleted(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (nerInitCheckKeyRef.current === currentInitKey) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const checkStatus = async () => {
+      const completed = await isNERCorrectionCompleted();
+      if (cancelled) return;
+
+      // Only mark this key as resolved once the check actually completes.
+      // If we marked it eagerly (before the await), a cancelled/aborted run
+      // (e.g. due to a dependency identity change or effect re-invocation)
+      // would permanently block any retry for this key, leaving
+      // nerInProgress/hasInitialNerCheckCompleted stuck at their defaults.
+      nerInitCheckKeyRef.current = currentInitKey;
+
+      if (completed === null) {
+        logErrorRef.current(
+          'Failed to determine status. If the issue persists, please contact system administrator.',
+          'Failed to determine correction status from MFE Viewer.',
+          'warning'
+        );
+        setNerInProgress(true);
+        setHasNerInitialCheckCompleted(true);
+        return;
+      }
+
+      if (completed === true) {
+        setNerInProgress(false);
+        setHasNerInitialCheckCompleted(true);
+        return;
+      }
+
+      setNerInProgress(true);
+      setHasNerInitialCheckCompleted(true);
+    };
+
+    checkStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [featureFlags.rerunNer, isNERCorrectionCompleted, mfeURL, type]);
+
   // Timeout guard: if iframe does not send READY in time, fail fast with a user error
   useEffect(() => {
     if (!mfeURL || !type || isViewerReadyRef.current || errorMessage) {
@@ -662,9 +784,15 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     if (isViewerReadyRef.current && payloadRef.current.ready && payloadRef.current.message) {
       const isInitialCheckCompleted = hasInitialCheckCompletedRef.current;
       const isSamInProgress = samInProgressRef.current;
+      const isInitialNerCheckCompleted = hasInitialNerCheckCompletedRef.current;
+      const isNerInProgress = nerInProgressRef.current;
 
       // For split/merge flows, do not send initial payload until SAM status check resolves.
       if (featureFlags.splitAndMerge && !isInitialCheckCompleted) {
+        return;
+      }
+      // For rerun NER flows, do not send initial payload until NER status check resolves.
+      if (featureFlags.rerunNer && !isInitialNerCheckCompleted) {
         return;
       }
 
@@ -676,11 +804,30 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           ...messageToSend,
           showSplitMerge: featureFlags.splitAndMerge && !isSamInProgress
         };
-        payloadRef.current = {
-          ...payloadRef.current,
-          message: messageToSend
+      }
+
+      if (
+        featureFlags.rerunNer &&
+        'isNerRetryInProgress' in messageToSend &&
+        'errorCase' in messageToSend &&
+        nerRetryDataPayloadRef.current
+      ) {
+        messageToSend = {
+          ...messageToSend,
+          errorCase: {
+            ...messageToSend.errorCase,
+            nerRetryFlag: nerRetryDataPayloadRef.current.nerRetryFlag,
+            nerRetryTimes: nerRetryDataPayloadRef.current.nerRetryTimes,
+            durationInSec: nerRetryDataPayloadRef.current.durationInSec
+          },
+          isNerRetryInProgress: featureFlags.rerunNer && isNerInProgress
         };
       }
+
+      payloadRef.current = {
+        ...payloadRef.current,
+        message: messageToSend
+      };
 
       sendToViewer(messageToSend);
 
@@ -697,13 +844,22 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         setIsLoading(false);
       }, ms);
     }
-  }, [sendToViewer, mfeTimeout, mfeURL, featureFlags.splitAndMerge]);
+  }, [sendToViewer, mfeTimeout, mfeURL, featureFlags.splitAndMerge, featureFlags.rerunNer]);
 
   useEffect(() => {
-    if (featureFlags.splitAndMerge && hasInitialCheckCompleted) {
+    if (
+      (featureFlags.splitAndMerge && hasInitialCheckCompleted) ||
+      (featureFlags.rerunNer && hasInitialNerCheckCompleted)
+    ) {
       trySend();
     }
-  }, [featureFlags.splitAndMerge, hasInitialCheckCompleted, trySend]);
+  }, [
+    featureFlags.splitAndMerge,
+    hasInitialCheckCompleted,
+    featureFlags.rerunNer,
+    hasInitialNerCheckCompleted,
+    trySend
+  ]);
 
   const trySendTransactionData = useCallback(() => {
     if (
@@ -727,9 +883,34 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       nerMetadataPayloadRef.current.ready &&
       nerMetadataPayloadRef.current.message
     ) {
-      sendToViewer(nerMetadataPayloadRef.current.message);
+      const isInitialNerCheckCompleted = hasInitialNerCheckCompletedRef.current;
+      const isNerInProgress = nerInProgressRef.current;
+
+      // For rerun NER flows, do not send initial payload until NER status check resolves.
+      if (featureFlags.rerunNer && !isInitialNerCheckCompleted) {
+        return;
+      }
+      let messageToSend = nerMetadataPayloadRef.current.message;
+      if ('readOnlyNer' in messageToSend && typeof messageToSend.readOnlyNer === 'boolean') {
+        // NER is editable only when NER is enabled, NER is not in progress, and split/merge is shown (SAM not in progress).
+        messageToSend = {
+          ...messageToSend,
+          readOnlyNer: featureFlags.rerunNer && isNerInProgress
+        };
+        nerMetadataPayloadRef.current = {
+          ...nerMetadataPayloadRef.current,
+          message: messageToSend
+        };
+      }
+      sendToViewer(messageToSend);
     }
-  }, [sendToViewer]);
+  }, [sendToViewer, featureFlags.rerunNer]);
+
+  useEffect(() => {
+    if (featureFlags.rerunNer && hasInitialNerCheckCompleted) {
+      trySendNerMetadata();
+    }
+  }, [featureFlags.rerunNer, hasInitialNerCheckCompleted, trySendNerMetadata]);
 
   // Get captures for viewer message based on highlights data page and configured field mappings
   const getCaptures = useCallback(
@@ -831,7 +1012,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           nerFlag: featureFlags.maintenanceApproachNERFlag
         },
         batchFileName: featureFlags.batchFileName,
-        batchDownloadRequired: featureFlags.batchDownloadRequired
+        batchDownloadRequired: featureFlags.batchDownloadRequired,
+        errorCase: {
+          errorMessage: featureFlags.caseErrorMessage,
+          nerRetryFlag: false,
+          nerRetryTimes: 0,
+          durationInSec: 0
+        },
+        isNerRetryInProgress: false
       };
 
       if (
@@ -954,7 +1142,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           nerFlag: featureFlags.maintenanceApproachNERFlag
         },
         batchFileName: featureFlags.batchFileName,
-        batchDownloadRequired: featureFlags.batchDownloadRequired
+        batchDownloadRequired: featureFlags.batchDownloadRequired,
+        errorCase: {
+          errorMessage: featureFlags.caseErrorMessage,
+          nerRetryFlag: false,
+          nerRetryTimes: 0,
+          durationInSec: 0
+        },
+        isNerRetryInProgress: false
       };
 
       return message;
@@ -1673,6 +1868,41 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     ]
   );
 
+  const onNerRetriggerClicked = useCallback(
+    async (data: Record<string, unknown>) => {
+      console.log(`[MFEViewer] Ner Retrigger clicked: ${data.reason ?? 'user_click'}`);
+      if (data && data.status === 'error') return;
+      setHasNerInitialCheckCompleted(true);
+
+      try {
+        setIsLoading(true);
+        setLoadingMessage('Re-triggering NER...');
+
+        if (!nerRetriggerReferenceList?.referenceList) {
+          throw new Error('NER retrigger data page is not configured.');
+        }
+
+        await fetchWithBackoff(
+          pConnRef.current,
+          nerRetriggerReferenceList.referenceList,
+          pConnRef.current.resolveConfigProps(
+            pConnRef.current.getRawConfigProps()?.nerRetriggerReferenceList?.parameters
+          ),
+          'list'
+        );
+
+        setNerInProgress(true);
+      } catch (err) {
+        setNerInProgress(false);
+        console.error('[MFEViewer] Failed to re-trigger NER:', err);
+      } finally {
+        setIsLoading(false);
+        setLoadingMessage('Loading...');
+      }
+    },
+    [nerRetriggerReferenceList?.referenceList]
+  );
+
   const onSplitMergeExited = useCallback(
     (data: Record<string, unknown>) => {
       if (featureFlags.allowExpand) setIsExpanded(false);
@@ -1800,6 +2030,27 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     samInProgress
   ]);
 
+  const updateNerStatus = useCallback((message: any) => {
+    let nerMessage = message;
+    nerMessage =
+      nerMessage &&
+      'errorCase' in nerMessage &&
+      nerRetryDataPayloadRef.current &&
+      'isNerRetryInProgress' in nerMessage
+        ? {
+            ...nerMessage,
+            errorCase: {
+              errorMessage: nerRetryDataPayloadRef.current?.errorMessage,
+              nerRetryFlag: nerRetryDataPayloadRef.current?.nerRetryFlag,
+              nerRetryTimes: nerRetryDataPayloadRef.current?.nerRetryTimes,
+              durationInSec: nerRetryDataPayloadRef.current?.durationInSec
+            },
+            isNerRetryInProgress: nerMessage
+          }
+        : nerMessage;
+    return nerMessage;
+  }, []);
+
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
 
@@ -1809,20 +2060,25 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
     try {
       const isCompleted = await isSAMCorrectionCompleted();
-
       if (isCompleted === true) {
         // Status is completed: update state and reload documents (which fires the event with showSplitMerge: true)
         setSamInProgress(false);
         updateSamInProgressStatusProperty(false);
         setLoadingMessage('Updating documents...');
         await loadDocumentsForViewerRef.current?.(false);
-        const updatedMessage =
+        await isNERCorrectionCompleted();
+        const nerInProgressFlag = nerInProgressRef.current;
+        let updatedMessage =
           payloadRef.current.message && 'showSplitMerge' in payloadRef.current.message
             ? {
                 ...payloadRef.current.message,
                 showSplitMerge: true
               }
             : payloadRef.current?.message;
+        if (featureFlags.rerunNer) {
+          updatedMessage = updateNerStatus(updatedMessage);
+        }
+
         payloadRef.current = {
           ...payloadRef.current,
           message: updatedMessage
@@ -1844,7 +2100,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         // Fire NER metadata to viewer if applicable
         const updatedNerMetadataMessage = {
           ...nerMetadataPayloadRef.current?.message,
-          readOnlyNer: false
+          readOnlyNer: featureFlags.rerunNer && nerInProgressFlag
         } as NerMetadataMessage;
         nerMetadataPayloadRef.current = {
           ...nerMetadataPayloadRef.current,
@@ -1889,13 +2145,93 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   }, [
     isRefreshing,
     isSAMCorrectionCompleted,
+    isNERCorrectionCompleted,
+    featureFlags.rerunNer,
     loadDocumentsForViewerRef,
     sendToViewer,
     updateSamInProgressStatusProperty,
     trySendNer,
     isSAMOpenField,
     completedWorkStatus,
-    updateSplitMergeWorkStatus
+    updateSplitMergeWorkStatus,
+    updateNerStatus
+  ]);
+
+  const handleNerRefresh = useCallback(async () => {
+    if (isNerRefreshing) return;
+
+    setIsNerRefreshing(true);
+    setIsLoading(true);
+    setLoadingMessage('Checking for updated documents...');
+
+    try {
+      const isCompleted = await isNERCorrectionCompleted();
+      const samInProgressFlag = samInProgressRef.current;
+      if (isCompleted === true) {
+        // Status is completed: update state and reload documents (which fires the event with showSplitMerge: true)
+        setNerInProgress(false);
+        setLoadingMessage('Updating documents...');
+        await loadDocumentsForViewerRef.current?.(false);
+        const updatedMessage = updateNerStatus(payloadRef.current.message);
+        payloadRef.current = {
+          ...payloadRef.current,
+          message: updatedMessage
+        };
+        // Fire updated load manifest to viewer to show split/merge button if applicable
+        if (updatedMessage) sendToViewer(updatedMessage);
+
+        // Fire transaction data to viewer if applicable
+        const updatedTransactionMessage = {
+          ...transactionDataPayloadRef.current?.message,
+          readOnly: false
+        } as LoadExtractionDataMessage;
+        transactionDataPayloadRef.current = {
+          ...transactionDataPayloadRef.current,
+          message: updatedTransactionMessage
+        };
+        if (updatedTransactionMessage) sendToViewer(updatedTransactionMessage);
+
+        // Fire NER metadata to viewer if applicable
+        const updatedNerMetadataMessage = {
+          ...nerMetadataPayloadRef.current?.message,
+          readOnlyNer: featureFlags.splitAndMerge && samInProgressFlag
+        } as NerMetadataMessage;
+        nerMetadataPayloadRef.current = {
+          ...nerMetadataPayloadRef.current,
+          message: updatedNerMetadataMessage
+        };
+        if (updatedNerMetadataMessage) sendToViewer(updatedNerMetadataMessage);
+
+        // Fire NER data to viewer if applicable
+        trySendNer();
+      } else if (isCompleted === false) {
+        // Status is not completed: retain info banner, keep NER in progress true (no event sent)
+        setNerInProgress(true);
+      } else {
+        logErrorRef.current(
+          'Unable to determine status. Please try refreshing again.',
+          'NER re-run status could not be determined from status data page.',
+          'warning'
+        );
+      }
+    } catch (err) {
+      logErrorRef.current(
+        'Failed to refresh status. Please try again.',
+        `Failed refreshing NER re-run status: ${err}`,
+        'warning'
+      );
+    } finally {
+      setIsNerRefreshing(false);
+      setIsLoading(false);
+      setLoadingMessage('Loading...');
+    }
+  }, [
+    isNerRefreshing,
+    featureFlags.splitAndMerge,
+    isNERCorrectionCompleted,
+    trySendNer,
+    sendToViewer,
+    updateNerStatus
   ]);
 
   const onNerDocRequest = useCallback(
@@ -2606,6 +2942,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         case NER_SUBMITTED:
           onNerSubmitted(data);
           break;
+        case NER_RETRIGGER_CLICKED:
+          onNerRetriggerClicked(data);
+          break;
         case CAPTURE_PREVIEW:
           onCapturePreview();
           break;
@@ -2650,6 +2989,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     onNerExited,
     onInvalidNer,
     onNerSubmitted,
+    onNerRetriggerClicked,
     onCapturePreview,
     onOcrRequest,
     onCancel,
@@ -2699,6 +3039,26 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
                 action: {
                   text: 'Refresh',
                   onClick: handleRefresh
+                }
+              }
+            ]}
+            style={{ marginBottom: '1rem' }}
+          />
+        )}
+
+      {/* Show info banner in case of re-classification in progress */}
+      {!errorMessage &&
+        samInProgress &&
+        hasInitialNerCheckCompleted &&
+        nerInProgressBannerText.length > 0 && (
+          <Banner
+            variant='info'
+            messages={[
+              {
+                label: nerInProgressBannerText,
+                action: {
+                  text: 'Refresh',
+                  onClick: handleNerRefresh
                 }
               }
             ]}

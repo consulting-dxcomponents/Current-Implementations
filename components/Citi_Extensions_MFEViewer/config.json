@@ -669,6 +669,41 @@
           "required": true
         },
         {
+          "label": "Ner re-run configuration",
+          "format": "GROUP",
+          "properties": [
+            {
+              "format": "DATAPAGE",
+              "label": "Data page to re-trigger NER",
+              "name": "nerRetriggerReferenceList"
+            },
+            {
+              "key": "rerunNer",
+              "name": "rerunNer",
+              "label": "Re-run NER (Toggle)",
+              "format": "PROPERTY",
+              "required": true,
+              "match": "propertyRef"
+            },
+            {
+              "key": "caseErrorMessage",
+              "name": "caseErrorMessage",
+              "label": "Case Error Message",
+              "format": "PROPERTY",
+              "required": true,
+              "match": "propertyRef"
+            },
+            {
+              "key": "nerInProgressBannerText",
+              "name": "nerInProgressBannerText",
+              "label": "NER In progress banner text",
+              "format": "PROPERTY",
+              "required": true,
+              "match": "propertyRef"
+            }
+          ]
+        },
+        {
           "label": "Noun master list configuration",
           "format": "GROUP",
           "properties": [

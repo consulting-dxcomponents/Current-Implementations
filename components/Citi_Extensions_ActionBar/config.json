@@ -40,6 +40,20 @@
       ]
     },
     {
+      "label": "Submit Button Configuration",
+      "format": "GROUP",
+      "properties": [
+        {
+          "key": "canSubmit",
+          "name": "canSubmit",
+          "label": "Can Submit (Toggle)",
+          "format": "PROPERTY",
+          "required": false,
+          "match": "propertyRef"
+        }
+      ]
+    },
+    {
       "name": "cancelButtonLabel",
       "label": "Cancel button label",
       "format": "TEXT",

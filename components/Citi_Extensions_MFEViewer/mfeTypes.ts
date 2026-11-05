@@ -113,6 +113,10 @@ export interface CitiExtensionsMfeViewerProps extends PConnFieldProps {
     referenceList: string;
     parameters: Record<string, unknown>;
   };
+  nerRetriggerReferenceList?: {
+    referenceList: string;
+    parameters: Record<string, unknown>;
+  };
   transactionDataSaveReferenceList: {
     referenceList: string;
     parameters: Record<string, unknown>;
@@ -123,6 +127,17 @@ export interface CitiExtensionsMfeViewerProps extends PConnFieldProps {
   saveMessageField: string;
   transactionsDataFieldMap: string;
   nerDataParameter: string;
+  nerQueryDataPage: {
+    source: string;
+    parameters: Record<string, unknown>;
+    fields: {
+      statusField: string;
+      responseField: string;
+    };
+  };
+  rerunNer: boolean;
+  caseErrorMessage: string;
+  nerInProgressBannerText: string;
   ocrOnDemandReferenceList: {
     referenceList: string;
     parameters: Record<string, unknown>;
@@ -211,8 +226,15 @@ export interface DocumentMessage {
     approach?: string;
     nerFlag?: boolean;
   };
-  batchFileName?: string;
-  batchDownloadRequired?: boolean;
+  batchFileName: string;
+  batchDownloadRequired: boolean;
+  errorCase?: {
+    errorMessage?: string;
+    nerRetryFlag?: boolean;
+    nerRetryTimes?: number;
+    durationInSec?: number;
+  };
+  isNerRetryInProgress?: boolean;
 }
 
 export interface SingleDocumentMessage extends DocumentMessage {
@@ -358,6 +380,14 @@ export interface LoadExtractionDataMessage {
   region?: string;
   useCase?: string;
   commonFooter?: string;
+}
+
+export interface NerRetryDataMessage {
+  errorMessage: string;
+  nerRetryFlag: boolean;
+  nerRetryTimes: number;
+  nerRetryStatus: string;
+  durationInSec: number;
 }
 
 export interface ValidationMsgMessage {

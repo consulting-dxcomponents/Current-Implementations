@@ -107,6 +107,19 @@ export function splitStringToIntArray(bboxStr: string): Array<number> {
   }
 }
 
+export function getStatusMatcher(pipeValues?: string): RegExp | null {
+  if (!pipeValues || typeof pipeValues !== 'string') return null;
+
+  const tokens = pipeValues
+    .split('|')
+    .map(item => item.trim())
+    .filter(Boolean)
+    .map(item => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+  if (tokens.length === 0) return null;
+  return new RegExp(`\\b(?:${tokens.join('|')})\\b`, 'i');
+}
+
 export type DataPageType = 'list' | 'page';
 
 export type DataPageResponse = Record<string, unknown> | Array<Record<string, unknown>>;
