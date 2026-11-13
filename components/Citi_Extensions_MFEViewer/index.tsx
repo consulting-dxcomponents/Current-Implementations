@@ -226,6 +226,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const hasInitialNerCheckCompletedRef = useRef(hasInitialNerCheckCompleted);
   const samInitCheckKeyRef = useRef<string | null>(null);
   const nerInitCheckKeyRef = useRef<string | null>(null);
+  // Keys of status checks currently in flight; prevents duplicate requests when effects re-run mid-request
+  const samInitInFlightKeyRef = useRef<string | null>(null);
+  const nerInitInFlightKeyRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     samInProgressRef.current = samInProgress;
@@ -370,6 +381,19 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     pConnRef.current = getPConnect();
   }, [getPConnect]);
 
+  // Snapshot of the resolved document data page parameters used for the last load.
+  // Lets the cascade callback ignore field changes made by this component itself.
+  const lastDocParamsKeyRef = useRef<string | null>(null);
+  const getDocParamsKey = useCallback(() => {
+    try {
+      return JSON.stringify(
+        pConnRef.current.resolveConfigProps(pConnRef.current.getRawConfigProps()?.parameters) ?? {}
+      );
+    } catch {
+      return null;
+    }
+  }, []);
+
   // Use strict origin from configured URL for secure postMessage communication
   const viewerOrigin = useMemo(() => {
     try {
@@ -497,6 +521,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
         // Update fields on redux
         actionsApi.updateFieldValue(samInProgressStatusProperty, status);
+        if (lastDocParamsKeyRef.current !== null) {
+          lastDocParamsKeyRef.current = getDocParamsKey();
+        }
 
         // Trigger fields to update on client side
         actionsApi.triggerFieldChange(samInProgressStatusProperty, status);
@@ -508,11 +535,17 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         );
       }
     },
-    [logErrorRef, samInProgressStatusProperty]
+    [logErrorRef, samInProgressStatusProperty, getDocParamsKey]
   );
 
+  const samQuerySource = samQueryDataPage?.source;
+  const samQueryStatusField = samQueryDataPage?.fields?.statusField;
+  const nerQuerySource = nerQueryDataPage?.source;
+  const nerQueryStatusField = nerQueryDataPage?.fields?.statusField;
+  const nerQueryResponseField = nerQueryDataPage?.fields?.responseField;
+
   const isSAMCorrectionCompleted = useCallback(async (): Promise<boolean | null> => {
-    if (!samQueryDataPage?.source || !samQueryDataPage?.fields?.statusField) {
+    if (!samQuerySource || !samQueryStatusField) {
       return null;
     }
 
@@ -522,7 +555,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     try {
       const res = (await fetchWithBackoff(
         pConnRef.current,
-        samQueryDataPage.source,
+        samQuerySource,
         pConnRef.current.resolveConfigProps(
           pConnRef.current.getRawConfigProps()?.samQueryDataPage?.parameters
         ),
@@ -533,7 +566,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         true
       )) as Record<string, unknown>;
 
-      const rawStatus = res?.[samQueryDataPage.fields.statusField];
+      const rawStatus = res?.[samQueryStatusField];
       const status = typeof rawStatus === 'string' ? rawStatus.trim() : '';
       if (!status) return null;
 
@@ -544,10 +577,10 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     } catch {
       return null;
     }
-  }, [samQueryDataPage, completedStatusRegex, inProgressStatusRegex]);
+  }, [samQuerySource, samQueryStatusField, completedStatusRegex, inProgressStatusRegex]);
 
   const isNERCorrectionCompleted = useCallback(async (): Promise<boolean | null> => {
-    if (!nerQueryDataPage?.source || !nerQueryDataPage?.fields?.statusField) {
+    if (!nerQuerySource || !nerQueryStatusField) {
       return null;
     }
 
@@ -557,7 +590,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     try {
       const res = (await fetchWithBackoff(
         pConnRef.current,
-        nerQueryDataPage.source,
+        nerQuerySource,
         pConnRef.current.resolveConfigProps(
           pConnRef.current.getRawConfigProps()?.nerQueryDataPage?.parameters
         ),
@@ -567,8 +600,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         },
         true
       )) as Record<string, unknown>;
-      const rawStatus = res?.[nerQueryDataPage.fields.statusField];
-      const rawResponse = res?.[nerQueryDataPage.fields.responseField];
+      const rawStatus = res?.[nerQueryStatusField];
+      const rawResponse = nerQueryResponseField ? res?.[nerQueryResponseField] : undefined;
       const status = typeof rawStatus === 'string' ? rawStatus.trim() : '';
       const response =
         rawResponse && typeof rawResponse === 'string' ? JSON.parse(rawResponse) : '';
@@ -588,7 +621,13 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     } catch {
       return null;
     }
-  }, [nerQueryDataPage, completedStatusRegex, inProgressStatusRegex]);
+  }, [
+    nerQuerySource,
+    nerQueryStatusField,
+    nerQueryResponseField,
+    completedStatusRegex,
+    inProgressStatusRegex
+  ]);
 
   const updateSplitMergeWorkStatus = useCallback(
     async (status: string) => {
@@ -613,33 +652,34 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   );
 
   useEffect(() => {
-    let cancelled = false;
     const currentInitKey = `${mfeURL}|${type}|${featureFlags.splitAndMerge}`;
 
     if (!featureFlags.splitAndMerge) {
+      samInitInFlightKeyRef.current = null;
       samInitCheckKeyRef.current = currentInitKey;
       setSamInProgress(false);
       setHasInitialCheckCompleted(true);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
-    if (samInitCheckKeyRef.current === currentInitKey) {
-      return () => {
-        cancelled = true;
-      };
+    // Skip if this key is already resolved or its request is still in flight.
+    // The in-flight request is not cancelled on effect re-runs (e.g. prop identity
+    // changes after a re-render); it will still apply its result for this key.
+    if (
+      samInitCheckKeyRef.current === currentInitKey ||
+      samInitInFlightKeyRef.current === currentInitKey
+    ) {
+      return;
     }
+
+    samInitInFlightKeyRef.current = currentInitKey;
 
     const checkStatus = async () => {
       const completed = await isSAMCorrectionCompleted();
-      if (cancelled) return;
+      // Ignore stale results (unmounted or superseded by a different key)
+      if (!isMountedRef.current || samInitInFlightKeyRef.current !== currentInitKey) return;
 
-      // Only mark this key as resolved once the check actually completes.
-      // If we marked it eagerly (before the await), a cancelled/aborted run
-      // (e.g. due to a dependency identity change or effect re-invocation)
-      // would permanently block any retry for this key, leaving
-      // samInProgress/hasInitialCheckCompleted stuck at their defaults.
+      samInitInFlightKeyRef.current = null;
       samInitCheckKeyRef.current = currentInitKey;
 
       if (completed === null) {
@@ -667,10 +707,6 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     };
 
     checkStatus();
-
-    return () => {
-      cancelled = true;
-    };
   }, [
     featureFlags.splitAndMerge,
     isSAMCorrectionCompleted,
@@ -680,33 +716,32 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   ]);
 
   useEffect(() => {
-    let cancelled = false;
     const currentInitKey = `${mfeURL}|${type}|${featureFlags.rerunNer}`;
 
     if (!featureFlags.rerunNer) {
+      nerInitInFlightKeyRef.current = null;
       nerInitCheckKeyRef.current = currentInitKey;
       setNerInProgress(false);
       setHasInitialCheckCompleted(true);
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
-    if (nerInitCheckKeyRef.current === currentInitKey) {
-      return () => {
-        cancelled = true;
-      };
+    // Skip if this key is already resolved or its request is still in flight
+    if (
+      nerInitCheckKeyRef.current === currentInitKey ||
+      nerInitInFlightKeyRef.current === currentInitKey
+    ) {
+      return;
     }
+
+    nerInitInFlightKeyRef.current = currentInitKey;
 
     const checkStatus = async () => {
       const completed = await isNERCorrectionCompleted();
-      if (cancelled) return;
+      // Ignore stale results (unmounted or superseded by a different key)
+      if (!isMountedRef.current || nerInitInFlightKeyRef.current !== currentInitKey) return;
 
-      // Only mark this key as resolved once the check actually completes.
-      // If we marked it eagerly (before the await), a cancelled/aborted run
-      // (e.g. due to a dependency identity change or effect re-invocation)
-      // would permanently block any retry for this key, leaving
-      // nerInProgress/hasInitialNerCheckCompleted stuck at their defaults.
+      nerInitInFlightKeyRef.current = null;
       nerInitCheckKeyRef.current = currentInitKey;
 
       if (completed === null) {
@@ -731,10 +766,6 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     };
 
     checkStatus();
-
-    return () => {
-      cancelled = true;
-    };
   }, [featureFlags.rerunNer, isNERCorrectionCompleted, mfeURL, type]);
 
   // Timeout guard: if iframe does not send READY in time, fail fast with a user error
@@ -937,12 +968,16 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       try {
         const actionsApi = pConnRef.current.getActionsApi();
         actionsApi.updateFieldValue(transientDocumentIdField, docId);
+        // Re-snapshot so the cascade callback doesn't reload documents for this self-triggered change
+        if (lastDocParamsKeyRef.current !== null) {
+          lastDocParamsKeyRef.current = getDocParamsKey();
+        }
         actionsApi.triggerFieldChange(transientDocumentIdField, docId);
       } catch (err) {
         console.warn('Failed to update transient document ID field:', err);
       }
     },
-    [transientDocumentIdField]
+    [transientDocumentIdField, getDocParamsKey]
   );
 
   const setCaptureWarningVisible = useCallback((show: boolean) => {
@@ -1180,6 +1215,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
   const loadDocumentsForViewer = useCallback(
     async (sendMessage = true, isCancelled?: () => boolean) => {
+      lastDocParamsKeyRef.current = getDocParamsKey();
       const [docs, categoryList] = (await Promise.all([
         // Fetch documents for viewer
         fetchWithBackoff(
@@ -1371,7 +1407,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       nerJsonField,
       trySendNer,
       transactionDataJsonField,
-      trySendTransactionData
+      trySendTransactionData,
+      getDocParamsKey
     ]
   );
 
@@ -1385,7 +1422,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   // MultiDoc: active document buffer + manifest metadata
   useEffect(() => {
     let cancelled = false;
-
+    console.log('Starting to load documents for viewer', new Date().toLocaleString());
     if (!mfeURL || !type) {
       setIsLoading(false);
       return;
@@ -1415,6 +1452,14 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       pConnRef.current.getPageReference(),
       getParametersForRegistration(),
       () => {
+        // Skip reloads when the document data page parameters haven't actually changed
+        // (e.g. cascade fired by this component's own field updates)
+        if (
+          lastDocParamsKeyRef.current !== null &&
+          lastDocParamsKeyRef.current === getDocParamsKey()
+        ) {
+          return;
+        }
         setIsLoading(true);
         setLoadingMessage('Updating documents...');
         run().catch(err => {
@@ -1442,13 +1487,13 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       );
     };
   }, [
-    getPConnect,
     referenceList,
     loadType,
     mfeURL,
     type,
     subscriptionId,
-    getParametersForRegistration
+    getParametersForRegistration,
+    getDocParamsKey
   ]);
   // Viewer requests additional document buffer by docId
 
@@ -1518,6 +1563,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   ]);
 
   const onViewerReady = useCallback(() => {
+    console.log('[MFEViewer] Viewer is ready', new Date().toLocaleString());
     if (isViewerReadyRef.current) return;
     isViewerReadyRef.current = true;
     trySend();
@@ -1892,6 +1938,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         );
 
         setNerInProgress(true);
+        nerRetryDataPayloadRef.current = {
+          ...nerRetryDataPayloadRef.current,
+          errorMessage: '',
+          nerRetryFlag: false
+        };
       } catch (err) {
         setNerInProgress(false);
         console.error('[MFEViewer] Failed to re-trigger NER:', err);
@@ -2030,7 +2081,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     samInProgress
   ]);
 
-  const updateNerStatus = useCallback((message: any) => {
+  const updateNerStatus = useCallback((message: any, nerInProgressFlag: boolean) => {
     let nerMessage = message;
     nerMessage =
       nerMessage &&
@@ -2045,7 +2096,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               nerRetryTimes: nerRetryDataPayloadRef.current?.nerRetryTimes,
               durationInSec: nerRetryDataPayloadRef.current?.durationInSec
             },
-            isNerRetryInProgress: nerMessage
+            isNerRetryInProgress: nerInProgressFlag
           }
         : nerMessage;
     return nerMessage;
@@ -2064,10 +2115,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         // Status is completed: update state and reload documents (which fires the event with showSplitMerge: true)
         setSamInProgress(false);
         updateSamInProgressStatusProperty(false);
+        const nerInProgressFlag = nerInProgressRef.current;
         setLoadingMessage('Updating documents...');
         await loadDocumentsForViewerRef.current?.(false);
-        await isNERCorrectionCompleted();
-        const nerInProgressFlag = nerInProgressRef.current;
         let updatedMessage =
           payloadRef.current.message && 'showSplitMerge' in payloadRef.current.message
             ? {
@@ -2076,9 +2126,8 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
               }
             : payloadRef.current?.message;
         if (featureFlags.rerunNer) {
-          updatedMessage = updateNerStatus(updatedMessage);
+          updatedMessage = updateNerStatus(updatedMessage, nerInProgressFlag);
         }
-
         payloadRef.current = {
           ...payloadRef.current,
           message: updatedMessage
@@ -2145,7 +2194,6 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   }, [
     isRefreshing,
     isSAMCorrectionCompleted,
-    isNERCorrectionCompleted,
     featureFlags.rerunNer,
     loadDocumentsForViewerRef,
     sendToViewer,
@@ -2172,18 +2220,25 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         setNerInProgress(false);
         setLoadingMessage('Updating documents...');
         await loadDocumentsForViewerRef.current?.(false);
-        const updatedMessage = updateNerStatus(payloadRef.current.message);
+        const updatedMessage =
+          payloadRef.current.message && 'showSplitMerge' in payloadRef.current.message
+            ? {
+                ...payloadRef.current.message,
+                showSplitMerge: featureFlags.splitAndMerge && samInProgressFlag
+              }
+            : payloadRef.current?.message;
+        const updatedManifestMessage = updateNerStatus(updatedMessage, false);
         payloadRef.current = {
           ...payloadRef.current,
-          message: updatedMessage
+          message: updatedManifestMessage
         };
         // Fire updated load manifest to viewer to show split/merge button if applicable
-        if (updatedMessage) sendToViewer(updatedMessage);
+        if (updatedManifestMessage) sendToViewer(updatedManifestMessage);
 
         // Fire transaction data to viewer if applicable
         const updatedTransactionMessage = {
           ...transactionDataPayloadRef.current?.message,
-          readOnly: false
+          readOnly: featureFlags.splitAndMerge && samInProgressFlag
         } as LoadExtractionDataMessage;
         transactionDataPayloadRef.current = {
           ...transactionDataPayloadRef.current,
