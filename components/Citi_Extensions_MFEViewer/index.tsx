@@ -167,6 +167,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     physicalSplitModalConfirmationMessage,
     inProgressWorkStatus,
     completedWorkStatus,
+    completedWorkStatusFailed,
     nounMasterReferenceList,
     nounField,
     nounClassificationField,
@@ -230,6 +231,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const samInitInFlightKeyRef = useRef<string | null>(null);
   const nerInitInFlightKeyRef = useRef<string | null>(null);
   const isMountedRef = useRef(true);
+  const samStatusRef = useRef<string | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -545,6 +547,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
   const nerQueryResponseField = nerQueryDataPage?.fields?.responseField;
 
   const isSAMCorrectionCompleted = useCallback(async (): Promise<boolean | null> => {
+    samStatusRef.current = null;
     if (!samQuerySource || !samQueryStatusField) {
       return null;
     }
@@ -568,6 +571,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
       const rawStatus = res?.[samQueryStatusField];
       const status = typeof rawStatus === 'string' ? rawStatus.trim() : '';
+      samStatusRef.current = status;
       if (!status) return null;
 
       if (completedMatcher?.test(status)) return true;
@@ -2169,7 +2173,11 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
           .getActionsApi()
           .triggerFieldChange(isSAMOpenField, isSplitMergeOpenedRef.current);
 
-        await updateSplitMergeWorkStatus(completedWorkStatus);
+        const workStatus =
+          samStatusRef.current && samStatusRef.current.includes('Failed')
+            ? completedWorkStatusFailed
+            : completedWorkStatus;
+        await updateSplitMergeWorkStatus(workStatus);
       } else if (isCompleted === false) {
         // Status is not completed: retain info banner, keep samInProgress true (no event sent)
         setSamInProgress(true);
@@ -2201,6 +2209,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
     trySendNer,
     isSAMOpenField,
     completedWorkStatus,
+    completedWorkStatusFailed,
     updateSplitMergeWorkStatus,
     updateNerStatus
   ]);
@@ -3103,7 +3112,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
 
       {/* Show info banner in case of re-classification in progress */}
       {!errorMessage &&
-        samInProgress &&
+        nerInProgress &&
         hasInitialNerCheckCompleted &&
         nerInProgressBannerText.length > 0 && (
           <Banner

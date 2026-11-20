@@ -94,6 +94,7 @@ export interface CitiExtensionsMfeViewerProps extends PConnFieldProps {
   physicalSplitModalConfirmationMessage: string;
   inProgressWorkStatus: string;
   completedWorkStatus: string;
+  completedWorkStatusFailed: string;
   allowAcknowledgementNER: boolean;
   allowOcrOnDemandNER: boolean;
   columnNamesNER: string;

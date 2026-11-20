@@ -539,6 +539,14 @@
           "format": "PROPERTY",
           "required": true,
           "match": "propertyRef"
+        },
+        {
+          "key": "completedWorkStatusFailed",
+          "name": "completedWorkStatusFailed",
+          "label": "Completed work status failed",
+          "format": "PROPERTY",
+          "required": true,
+          "match": "propertyRef"
         }
       ]
     },
