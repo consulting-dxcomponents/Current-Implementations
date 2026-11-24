@@ -930,7 +930,9 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
         // NER is editable only when NER is enabled, NER is not in progress, and split/merge is shown (SAM not in progress).
         messageToSend = {
           ...messageToSend,
-          readOnlyNer: featureFlags.rerunNer && isNerInProgress
+          readOnlyNer: featureFlags.rerunNer
+            ? featureFlags.rerunNer && isNerInProgress
+            : featureFlags.readOnlyNer
         };
         nerMetadataPayloadRef.current = {
           ...nerMetadataPayloadRef.current,
@@ -939,7 +941,7 @@ function CitiExtensionsMfeViewer(props: CitiExtensionsMfeViewerProps) {
       }
       sendToViewer(messageToSend);
     }
-  }, [sendToViewer, featureFlags.rerunNer]);
+  }, [sendToViewer, featureFlags.rerunNer, featureFlags.readOnlyNer]);
 
   useEffect(() => {
     if (featureFlags.rerunNer && hasInitialNerCheckCompleted) {
