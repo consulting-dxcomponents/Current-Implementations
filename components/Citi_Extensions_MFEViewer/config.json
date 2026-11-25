@@ -12,6 +12,13 @@
   "icon": "Iframe.svg",
   "properties": [
     {
+      "name": "A",
+      "label": "Region A",
+      "format": "CONTENTPICKER",
+      "addTypeList": ["Fields", "Views"],
+      "allowCreatingGroup": true
+    },
+    {
       "key": "mfeURL",
       "name": "mfeURL",
       "label": "MFE URL",
